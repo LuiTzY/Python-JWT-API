@@ -1,0 +1,6 @@
+backend_drf
+__pycache__
+db.sqlite3
+.env
+Front
+debug.log
