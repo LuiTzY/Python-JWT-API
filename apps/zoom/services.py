@@ -1,12 +1,13 @@
 import os
-import json
 import base64
-import datetime
+from datetime import datetime
 import requests
 from .models import Zoom
 from dotenv import load_dotenv
-from errors.models import ZoomRecordingError
-from calendly.services import CalendlyService
+from apps.clients.models import Client
+from django.db import IntegrityError
+from apps.errors.models import ZoomRecordingError
+from apps.calendly.services import CalendlyService
 load_dotenv()
 
 class ZoomService():
@@ -19,7 +20,17 @@ class ZoomService():
         self.redirectURL = os.getenv("redirectURL")
         self.storage_url = "D:/Zoom Grabaciones/"
         self.calendly = CalendlyService()
-        self.clients = self.calendly.get_scheduled_events_invite_email()
+        self.clients = ''
+    
+       #esta funcion devolvera los parametros necesarios en la cabecera de la peticion para la autorizacion
+    #incluira el token de accesso
+    def get_header_access_token_params(self,mentor):
+        #se hara una solicitud a la bd, para obtener las credenciales
+        tokens = Zoom.objects.get(mentor=mentor)
+        print(tokens)
+        return {
+            'Authorization': 'Bearer {}'.format(tokens.access_token)
+        }
         
     #se le debe de pasar el codigo de autorizacion para la solicitud 
     def zoom_token_auth_params (self, code):
@@ -36,6 +47,7 @@ class ZoomService():
     #Este metodo se va a ejecutar cuando haya un post en el api view de zoom
     def get_access_token(self,auth_code):
         try:
+            
         # Hacemos una solicitud POST a la url para obtener el token de acceso, refresh token y otras opciones como el scope etc
             response = requests.post(
                                 url=self.zoom_token_url, # url a la que se le hace solicitud una vez obtenido un codigo de autorizacion para obtener un token de acceso
@@ -46,15 +58,16 @@ class ZoomService():
             response.raise_for_status()
             
         except requests.exceptions.HTTPError as e:
-            print("Ocurrio un Error de autorizacion codigo invalido \n")
+            
+            print(f"Ocurrio un Error de autorizacion codigo invalido {e} \n")
             #e es el error que ha ocurrido, y 1 significa que la solicitud se proceso pero hubo un error con el codigo de autorizacion de zoom para la app (es invalido)
-            return [0,e]
+            return [0,str(e)]
         else:
             credentials = response.json()
             #si las credenciales se guardaron correctamente en la base de datos una vez hecha la autorizacion, devolvemos una lista con un 0
             #indicando que no ocurrieron errores y las credenciales se guardaron
          
-            #si la respuesta fallo devolvemos un 1 de que esta fue fallida, e imprimimos el error
+            #si la respuesta no fallo devolvemos un 1 de que esta fue fallida, o
             return [1,credentials]
     
     #metodo para unir el clientID y clientSecret, encondeados en base 64
@@ -80,25 +93,28 @@ class ZoomService():
         "Content-Type": "application/x-www-form-urlencoded",
         }
         
-    def refresh_token(self,user_id):
+    def refresh_token(self,mentor_id):
         #Se hace una consulta para obtener las credenciales
-        tokens = Zoom.objects.get(user__id = user_id)
+        tokens = Zoom.objects.get(mentor_id = mentor_id)
         try:
             #Hacemos una solicitud para refrescar el token, con los parametros necesarios
             token_refreshed = requests.post(url=self.zoom_refresh_token_url,
                       headers=self.zoom_refresh_token_params(),
                       params={
                           'grant_type':'refresh_token',
-                          'refresh_token':tokens[1]
+                          'refresh_token':tokens.refresh_token
                       })
             
+            
+            print(f"No son iguales {tokens.refresh_token} \n")            
             #Invocamos un error si realmente este ocurre con la solicitud
             token_refreshed.raise_for_status()
             
         except  requests.exceptions.HTTPError as e:
-            error = str(e)
+            print(token_refreshed.text)
+
             #imprimer el error por consola
-            print("Error: No se pudo actualizar el token de accesso debido a: {}\n".format(e))
+            print("Error: No se pudo actualizar el token de accesso debido a: {}\n".format(token_refreshed.text))
             #retornamos el error junto a un numero 2, que identifca que ocurrio un error con la solicitud
             return [2,e]
         
@@ -121,36 +137,34 @@ class ZoomService():
         
     def zoom_refresh_token_params (self):
       return {
-          "Host":"zoom.us",
+        "Host":"zoom.us",
         #Authorization, lleva la estructura de Basic + los tokens codificados en base a 64 bits, zoom lo requiere asi para su peticion
         "Authorization": f"Basic {self.encode_app_credentials()}",
         #el tipo de dato que espera la api de zoom para la solicitud
         "Content-Type": "application/x-www-form-urlencoded",
         }
     
-    def zoom_api_get_requests(self,endpoint):
+    def zoom_api_get_requests(self,endpoint,mentor):
+      
+        print(f"Haremos una solicitud a: {endpoint} con el mentor :{mentor.name}")
         try:
             #hacemos una solicitud por get al endpoint que nos pasen, y obtenemos los params de las cabeceras
-            response = requests.get(url=endpoint,headers=self.get_header_access_token_params())
-            print(f"Este es el token con el que se haran las solicitudes {self.get_header_access_token_params()} \n")
+            response = requests.get(url=endpoint,headers=self.get_header_access_token_params(mentor))
+            
             #print(f"Esto son los datos con los que se hara la solicitud {endpoint} cabeceras de la solicitud {self.header_access_token_params}")
             response.raise_for_status()
             
         except requests.exceptions.HTTPError as e:
-            
             r = response.json()
             print(f"OCURRIO UN ERROR {r} \n ")
 
             #verificamos si el token se expiro
-            if response.status_code == 401 and r['message'] == "Invalid access token.":
-                print("El token es invalido, proporcionara un token correcto \n")
-                
-                return "El token es invalido, proporcionara un token correcto"
             
-            elif response.status_code == 401 and r['message'] == "Access token is expired.":
-                print(f"El token expiro, pero se intentara actualizarlo {e} \n")
+            
+            if response.status_code == 401 :
+                print(f"El token expiro, pero se intentara actualizarlo  \n")
                 
-                refresh_token  = self.refresh_token()
+                refresh_token  = self.refresh_token(mentor.id)
                 """
                     una vez se intente refrescar el token de refresco podemos obtener 3 tipos de resupuestas indentificados con estos nuemeros
                     #0 No se pudo refrescar el token 
@@ -177,7 +191,7 @@ class ZoomService():
                 elif refresh_token[0] == 1:
                     
                     #Si entra aqui, las credenciales fueron actualizadas en la base de datos
-                    print("La solicitud se proceso, pero ocurrio un error al guardar las credencianles \n")
+                    print(f"La solicitud se proceso y las credenciales fueron guardadas correctamente del usuario {mentor.user.first_name} \n")
                     return [2,2]
                 
                 #Obtenemos un 0 como respuesta lo que indica que fue exitosa la renovacion del token
@@ -189,7 +203,7 @@ class ZoomService():
         
         else:
             res = response.json()
-            print(f"{res}\n")
+            print(f"{res} esto\n")
             
             return [3,res]
             
@@ -218,17 +232,24 @@ class ZoomService():
             
             return False
         
-    def download_zoom_recordings(self,start_date,end_date):
+    def download_zoom_recordings(self,start_date,end_date,mentor):
+        
+         # Convertimos las fechas a cadenas en el formato correcto
+        start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
+        end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
+        self.clients = self.calendly.get_scheduled_events_invite_email(start_date_str,end_date_str)
+        #lista de grabaciones que se enviaran para descargar asincronicamente junto con la informacion del cliente que pertenece etc
+        recordings_info = []
         
         # Fecha de inicio y fin del rango
-        fecha_inicio_str = start_date
+        #fecha_inicio_str = start_date
 
         # Convertir las cadenas de fecha en objetos datetime
-        fecha_inicio = datetime.strptime(fecha_inicio_str, "%Y-%m-%d")
+        #fecha_inicio = datetime.strptime(fecha_inicio_str, "%Y-%m-%d")
         
         #la fecha de finalizacion siempre sera la actual
-        fecha_fin = datetime.now()
-        print("Fecha final {}\n".format(fecha_fin))
+        #fecha_fin = datetime.now()
+        #print("Fecha final {}\n".format(fecha_fin))
   
         
         """
@@ -252,197 +273,176 @@ class ZoomService():
         """
         
         #Iteramos hasta que la fecha de inicio sea igual que la fecha actual
-        while fecha_inicio <= fecha_fin:
-                   
-            print("Obteniendo las grabaciones de la fecha: {} \n".format(fecha_inicio.strftime("%Y-%m-%d")))
-            # se hace una solicitud a la api de zoom con la fecha que se este iterando con el formato de YYYY-MM--DD, junto con la informacion de los headers
-            #response = requests.get(url="https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(fecha_inicio.strftime("%Y-%m-%d"),fecha_inicio.strftime("%Y-%m-%d")),headers=self.get_header_access_token_params())
+        #while start_date <= fecha_fin:
             
-            response_json = self.zoom_api_get_requests("https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(fecha_inicio.strftime("%Y-%m-%d"),fecha_inicio.strftime("%Y-%m-%d")))
-            #se convierten los datos en formato json de la respuesta de la api de zoom, para poder acceder a ellos y manejarlos           
-                
-            print("Se obtuvieron esta cantidad de grabaciones de la fecha: {} grabaciones encontradas: {}\n".format(fecha_inicio.strftime("%Y-%m-%d"),response_json[0]['total_records']))
-            
-            
-            #Se consulta el status del disco duro, para ver si esta conectado en la computadora o no, para verificar si las grabaciones pueden ser guardadas
-            storage_status = self.get_storage()
-            
-            #Verificamos la disponibilidad del disco duro
-            if not storage_status:
-                
-                return "El disco duro para guardar las grabaciones no se encuentra conectado en la computadora\n"
-            
-            #El disco duro esta disponible para almacenar las carpetas
-            print("El disco duro se encuentra para descargar las grabaciones \n")   
-              
-            
-            if response_json[1] == 3: #Si obtenemos un 3 de la respuesta, es que se proceso correctamente la solicitud
-                
-                #accedemos a la respuesta al total de grabaciones, para determinar que funcion sera utilizada para descargar las grabaciones
-                #Si solo hay una reunion, se utilizara el metodo para descargarla 
-                if response_json[0]['total_records'] == 1:
-                #La solicitud fue exitosa por lo que se podran obtener las grabaciones
-                    self.download_one_recording(response_json[0]) #pasamos el 0 ya que ahi es que se encuentra los datos de la solicitud de zoom
-                        
-                elif response_json[0]['total_records'] > 1:
-                    #Si hay mas de una reunion entrara aqui
-                    self.download_more_videos()
-                else:
-                    print("No se encontraron grabaciones")
-                    return "No se encontraron grabaciones"
-                
-            else:
-                #caso contrario de que no obtengamos un 3, es posible que haya sido un error, por lo que mostraremos simplemente el error que obtuvimos retornandolo
-                return response_json
-                        
-           
+        #print(f"{fecha_fin}, fechas : {start_date}")
+        #print("Obteniendo las grabaciones de la fecha: {} \n".format(start_date.strftime("%Y-%m-%d")))
+        # se hace una solicitud a la api de zoom con la fecha que se este iterando con el formato de YYYY-MM--DD, junto con la informacion de los headers
+        #response = requests.get(url="https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(fecha_inicio.strftime("%Y-%m-%d"),fecha_inicio.strftime("%Y-%m-%d")),headers=self.get_header_access_token_params())
         
-
+        response_json = self.zoom_api_get_requests("https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(start_date,end_date),mentor)
+        if response_json[0] == 2:
+            return {"message":"Las credenciales de zoom fueron actualizadas","status":"200"}
+        #se convierten los datos en formato json de la respuesta de la api de zoom, para poder acceder a ellos y manejarlos           
+        print(response_json)
+        print("Se obtuvieron esta cantidad de grabaciones de la fecha: {} grabaciones encontradas: {}\n".format(start_date.strftime("%Y-%m-%d"),response_json[1]['total_records']))
+        
+        
+        #Se consulta el status del disco duro, para ver si esta conectado en la computadora o no, para verificar si las grabaciones pueden ser guardadas
+        storage_status = self.get_storage()
+        
+        #Verificamos la disponibilidad del disco duro
+        if not storage_status:
             
-                #se adelanta un año si es diciembre
-            if fecha_inicio.month == 12:
-                fecha_inicio = datetime(fecha_inicio.year + 1, 1, 9)
-            #se adelanta un mes
+            return "El disco duro para guardar las grabaciones no se encuentra conectado en la computadora\n"
+        
+        #El disco duro esta disponible para almacenar las carpetas
+        print("El disco duro se encuentra para descargar las grabaciones \n")   
+            
+        
+        if response_json[0] == 3: #Si obtenemos un 3 de la respuesta, es que se proceso correctamente la solicitud
+            print("Se obtuvieron las grabaciones desde la api de zoom correctamente \n")
+            #accedemos a la respuesta al total de grabaciones, para determinar que funcion sera utilizada para descargar las grabaciones
+            #Si solo hay una reunion, se utilizara el metodo para descargarla 
+            if response_json[1]['total_records'] == 1:
+                print(f"Obtuvimos una sola grabacion dentro del rango de fechas establecido {start_date} {end_date}\n")
+                #devuelve la un diccionario de la grabacion
+                record = self.get_one_recording_full_info(response_json[1],mentor) #pasamos el 0 ya que ahi es que se encuentra los datos de la solicitud de zoom
+                recordings_info.append(record)
+                print(f"Esta es la informaciona agregada{recordings_info} \n")
+                
+            elif response_json[1]['total_records'] > 1:
+                print(f"Obtuvimos varias grabaciones dentro del rango de fechas establecido {start_date} {end_date}\n")
+                #Si hay mas de una reunion entrara aqui y devolvera una lista de diccionarios de la grabaciones
+                recordings = self.get_multiple_recordings_full_info(response_json[1],mentor)
+                print(f"Grabaciones que se obtuvieron {recordings} \n")
+                recordings_info.append(recordings)
+
             else:
-                fecha_inicio = datetime(fecha_inicio.year, fecha_inicio.month + 1, 9)
-                
+                print("No se encontraron grabaciones")
+            return {"records_found":len(recordings_info),"records_info":recordings_info }
+            
+        else:
+            #caso contrario de que no obtengamos un 3, es posible que haya sido un error, por lo que mostraremos simplemente el error que obtuvimos retornandolo
+            return recordings_info
+                        
+            
     
-    def download_one_recording(self, response_json): #response_json va a ser la respuesta de la api de zoom                          
+    def get_one_recording_full_info(self, response_json,mentor): #response_json va a ser la respuesta de la api de zoom                          
                 
-                print("Entra aqui ha descargar \n")
                 
+                print(f"Obteniendo informacion de la grabacion {response_json} \n")
+                
+                #Esta funcion solo devolvera la informacion de la grabacion, cliente al que pertenece, grabacion, donde se descargara etc
+                #La subida de drive sera otro tema a evaluar luego de descargar las grabaciones                
                
-                #El disco duro esta disponible, por lo que seguira el flujo para crear la carpeta y guardar las grabaciones
                 
-                #instanceamos la clase de calendly
-                #obtenemos los eventos que coinciden con la misma fecha
-                
+              
+                print(f"Clientes Obtenidos {self.clients} \n")
+
                 #verificamos que respuesta obtuvimos de los metodos de calendly para mejorar la captura de errores
-                
                 if self.clients[0] == 1:
+
                     #Obtenemos loc clientes y hacemos el proceso de la automatizacion
                     #guardamos la informacion de la clienta que coincida con el id de la reunion relacionado
-                    clienta_info = self.get_client_by_meeting_id(self.clients[1],response_json["meetings"][0]['id'])
-                    
+                    clienta_info = self.get_client_by_meeting_id(self.clients[1],response_json["meetings"][0],mentor)
                     print(f"Informacion de la clienta que conciede con el id {clienta_info} id de la reunion {response_json['meetings'][0]['id'] }")
-                    nombre_clienta = clienta_info[0]['nombre']
-                    correo_clienta = clienta_info[0]['email']
-                    
-                    
-                    print("Nombre de la clienta: {} Correo de la clienta: {}".format(nombre_clienta[0],correo_clienta))
-                    
-                    #se creara un folder con el nombre del cliente
-                    folder_clienta_name = os.path.join(self.storage_url,nombre_clienta)
 
-                    #se crea la carpeta con el nombre de la clienta si no existe                         
-                    if not os.path.exists(folder_clienta_name):
-                        os.makedirs(folder_clienta_name)
-                        
-                    #crear archivo de texto en la carpeta de esa grabacion, acerca de la respuesta que se obtuvo
-                    with open(os.path.join(folder_clienta_name,"zoom-response.json"),"w",encoding="utf8") as record_file:
-                        #se escribe en formato json los datos que nos devuelve zoom como respuesta de la fecha de esa grabacion que se descargara
-                        json.dump(response_json,record_file,indent=4)
+                    #verficamos si la grabacion tiene una clienta relacionada
+                    if 'not_found_client' in clienta_info:
+                        #retoranomos solo la informacion de la grabacion
+                        return clienta_info
                     
-                    print(f"Se han escrito correctamente los metadatos de la grabacion \n")
                     
-                    #Lista de las lista de archivos de las grabaciones, solo almacenara la que es un video y su extension debe der ser MP4 (es necesario, ya que manualmente se tendria que ver)
-                    #cual es el indice que tiene ese archivo MP4, y estos indices pueden variar dependiendo si hay archivos de texto o no etc...
-                    recording_shared_screen = [grabacion for grabacion in response_json["meetings"][0]['recording_files'] if grabacion['file_extension'] == "MP4"]
-                    
-                            
-                    #obtenemos la fecha de cuando se inicio la reunion
-                    fecha_invalid_format = recording_shared_screen[0]["recording_start"]
-                    #la convertimos en un formato valido ya que el tipo de objeto que es la fecha es:"2023-10-02T20:25:55Z"
-                    fecha_folder = datetime.strptime(fecha_invalid_format, "%Y-%m-%dT%H:%M:%SZ")
-                    
-                    #se forma una ruta, para crear una carpeta para esa grabacion en esa ruta, el nombre de la carpeta sera la fecha de la grabacion con un formato DATE Ej(2020-12-12)
-                    record_folder = os.path.join(folder_clienta_name,f"{fecha_folder.date()}")
-                    
+                    #caso contrario retornamos la informacion completa de la clienta
+                    return clienta_info 
+                
+                
+                #Retornamos la informacion de la grabacion
+                
                     #Si no existe esa carpeta se creara
-                    if not os.path.exists(record_folder):
-                        os.makedirs(record_folder)
+                    # if not os.path.exists(record_folder):
+                    #     os.makedirs(record_folder)
                     
                     
                     #una vez creada la carpeta, se descargara el video en la ruta del folder de la clienta con la fecha de la grabacion
-                    with open(os.path.join(record_folder,"grabacion.mp4"),"wb") as record:
-                        """
-                            Las grabaciones de los videos se le pueden haber generado una password, lo que haria que la grabacion se descargase incorrectamente
-                            y el flujo siguiera como lo previsto, por lo que para evitar esto, enviamos el token de accesso a la url de descarga para asi poder
-                            descargarla correctamente
-                        """
-                        tokens = self.get_zoom_credentials()
-                        #video = self.download_url_video(url=f"{records_types['download_url']}")
-                        video = requests.get(url=recording_shared_screen[0]['download_url'],stream=True,headers={
-                                    'Authorization':'Bearer {}'.format(tokens[0])
-                                })
+                    # with open(os.path.join(record_folder,"grabacion.mp4"),"wb") as record:
+                    #     """
+                    #         Las grabaciones de los videos se le pueden haber generado una password, lo que haria que la grabacion se descargase incorrectamente
+                    #         y el flujo siguiera como lo previsto, por lo que para evitar esto, enviamos el token de accesso a la url de descarga para asi poder
+                    #         descargarla correctamente
+                    #     """
+                    #     tokens = self.get_zoom_credentials()
+                    #     #video = self.download_url_video(url=f"{records_types['download_url']}")
+                    #     video = requests.get(url=recording_shared_screen[0]['download_url'],stream=True,headers={
+                    #                 'Authorization':'Bearer {}'.format(tokens[0])
+                    #             })
 
-                        # Guardar el progreso de descarga
-                        download_progress = 0
+                    #     # Guardar el progreso de descarga
+                    #     download_progress = 0
 
-                        # Definir el tamaño del bufer para leer los datos, mientra mas alto mas ram consume
-                        buffer_size = 1024
-                        try:
+                    #     # Definir el tamaño del bufer para leer los datos, mientra mas alto mas ram consume
+                    #     buffer_size = 1024
+                    #     try:
                             
-                            print(f"En el folder {record_folder} se descargara la grabacion de la url: {recording_shared_screen[0]['download_url']}\n")
-                            for data in video.iter_content(chunk_size=buffer_size):
-                                record.write(data)
+                    #         print(f"En el folder {record_folder} se descargara la grabacion de la url: {recording_shared_screen[0]['download_url']}\n")
+                    #         for data in video.iter_content(chunk_size=buffer_size):
+                    #             record.write(data)
                                 
-                                # Actualizar el progreso de descarga si hay un tamaño de archivo válido
-                                if  recording_shared_screen[0]["file_size"] > 0:
-                                    download_progress += len(data)
-                                    # Calcular el porcentaje de descarga
-                                    percentage_progress  = (download_progress / recording_shared_screen[0]["file_size"]) * 100
-                                    # Imprimir el porcentaje de descarga
-                                    print(f"Progreso de descarga de la grabacion: {percentage_progress :.2f}%\n")
+                    #             # Actualizar el progreso de descarga si hay un tamaño de archivo válido
+                    #             if  recording_shared_screen[0]["file_size"] > 0:
+                    #                 download_progress += len(data)
+                    #                 # Calcular el porcentaje de descarga
+                    #                 percentage_progress  = (download_progress / recording_shared_screen[0]["file_size"]) * 100
+                    #                 # Imprimir el porcentaje de descarga
+                    #                 print(f"Progreso de descarga de la grabacion: {percentage_progress :.2f}%\n")
                                     
-                        except Exception as e:
-                            error = str(e)
-                            load_json_error(error)
-                            #Ocurrio un error y no se pudo descargar el video, ya sea por temas de red etc
-                            #Habria que guardar el error en la base de datos
-                            return f"No se pudo guardar el video ya que ocurrio esto: {e}"
+                    #     except Exception as e:
+                    #         error = str(e)
+                    #         #Ocurrio un error y no se pudo descargar el video, ya sea por temas de red etc
+                    #         #Habria que guardar el error en la base de datos
+                    #         return f"No se pudo guardar el video ya que ocurrio esto: {e}"
                         
-                        else:                   
-                            print("Se descargo correctamente el video \n")
+                    #     else:                   
+                    #         print("Se descargo correctamente el video \n")
                     
-                            print("Ahora se va a guardar los datos de la clienta en la base de datos \n")
+                    #         print("Ahora se va a guardar los datos de la clienta en la base de datos \n")
                             
-                            insert_client_db = self.db.create_client(clienta_info[0])
+                    #         insert_client_db = self.db.create_client(clienta_info[0])
                             
-                            #Nota, verificar cuando ya un clienta exista
-                            if insert_client_db[0] == 1:
-                                #si se inserta correctamente el cliente seguira el flujo
+                    #         #Nota, verificar cuando ya un clienta exista
+                    #         if insert_client_db[0] == 1:
+                    #             #si se inserta correctamente el cliente seguira el flujo
                                 
-                                print("Se guardo en la base de datos la informacion de la clienta \n")
+                    #             print("Se guardo en la base de datos la informacion de la clienta \n")
                                 
-                                    #intenta eliminar la reunion desde la api de zoom, una vez el archivo es descargado
-                            try:
-                                    delete_recording = requests.delete(url="https://api.zoom.us/v2/meetings/{}/recordings/?delete=trash".format(response_json["meetings"][0]['id']),headers=self.get_header_access_token_params())
-                                    #se elimino correctamente, ahora se procedera a subir el video a drive
-                                    video_info = {
-                                        'video_file_name':"Grabacion de la reunion de {}.mp4".format(fecha_folder.date()),
-                                        'video_src':os.path.join(record_folder,"grabacion.mp4")
-                                    }
+                    #                 #intenta eliminar la reunion desde la api de zoom, una vez el archivo es descargado
+                    #         try:
+                    #                 delete_recording = requests.delete(url="https://api.zoom.us/v2/meetings/{}/recordings/?delete=trash".format(response_json["meetings"][0]['id']),headers=self.get_header_access_token_params())
+                    #                 #se elimino correctamente, ahora se procedera a subir el video a drive
+                    #                 video_info = {
+                    #                     'video_file_name':"Grabacion de la reunion de {}.mp4".format(fecha_folder.date()),
+                    #                     'video_src':os.path.join(record_folder,"grabacion.mp4")
+                    #                 }
                                     
-                                    client_info_details = {
-                                        'email':clienta_info[0]['email'],
-                                        'client_folder_name':clienta_info[0]['nombre']
-                                    }
-                                    upload_zoom_video(video_info,client_info_details)
+                    #                 client_info_details = {
+                    #                     'email':clienta_info[0]['email'],
+                    #                     'client_folder_name':clienta_info[0]['nombre']
+                    #                 }
+                    #                 #upload_zoom_video(video_info,client_info_details)
                                     
-                                    delete_recording.raise_for_status()
+                    #                 delete_recording.raise_for_status()
                                     
-                            except requests.exceptions.HTTPError as e:
-                                error = str(e)
-                                load_json_error(error)
+                    #         except requests.exceptions.HTTPError as e:
+                    #             error = str(e)
                                     
-                                print("No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json()))
+                    #             print("No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json()))
                                     
-                                return "No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json())
+                    #             return "No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json())
                             
                                 
-                            else:
-                                print("No se pudo guardar en la base de datos la informacion de la clienta\n")
+                    #         else:
+                    #             print("No se pudo guardar en la base de datos la informacion de la clienta\n")
                                 
                 else:
                     #Retornamos el error
@@ -452,130 +452,104 @@ class ZoomService():
            
                         
                             
-    def download_more_videos(self,response_json):
+    def get_multiple_recordings_full_info(self,response_json,user):
         
+        print("Obtuvimos varias grabaciones \n")
+        print(f" Clientes   {self.clients}\n")
+
         if self.clients[0] == 1:
-                
+                recordings = []
+                records = []
                 banned_recordings_id = []              
             #si son mas de una grabacion las que se encuentren en el rango de esas fechas y los ids de estas no estan en los ids baneados
                 for record in range(response_json["total_records"]):
                     
                     if response_json["meetings"][record]['uuid'] not in banned_recordings_id:
                         banned_recordings_id.append(response_json["meetings"][record]['uuid'])
-                        
-                        #estamos iterando por cada diccionario de una grabacion, por lo que descargaremos esa grabacion que se este iterando
-                       
-
-                        clienta_info = self.get_client_by_meeting_id(self.clients[1],response_json["meetings"][record]['id'])
-                        
-                        print(f"Informacion de la clienta que coincide con el id {clienta_info} id de la reunion {response_json['meetings'][0]['id'] }")
-                        
-                        nombre_clienta = clienta_info[0]['nombre']
-                        correo_clienta = clienta_info[0]['email']                        
-                        print("Nombre de la clienta: {} {}".format(nombre_clienta[0],nombre_clienta[1]))
-                        
-                        
-                        #se creara un folder con el nombre del cliente
-                        folder_clienta_name = os.path.join(self.storage_url,f"{nombre_clienta[0]} {nombre_clienta[1].replace(':', '')}")
-
-                                #se crea la carpeta con el nombre de la clienta si no existe                         
-                        if not os.path.exists(folder_clienta_name):
-                            os.makedirs(folder_clienta_name)
-                            
-                        #crear archivo de texto para la clienta
-                        with open(os.path.join(folder_clienta_name,"zoom-response.json"),"w",encoding="utf8") as record_file:
-                            #se escribe en formato json los datos que nos devuelve zoom como respuesta de la fecha de esa grabacion que se descargara
-                            json.dump(response_json,record_file,indent=4)
-                        
-                        print(f"Se han escrito correctamente los metadatos de la grabacion \n")
-                        
-                        print(f"LINKS CON LISTA DE COMPRENSION {recording_shared_screen} \n")
-                        
-                         #Lista de las lista de archivos de las grabaciones, solo almacenara la que es un video
-                        recording_shared_screen = [grabacion for grabacion in response_json["meetings"][record]['recording_files'] if grabacion['file_extension'] == "MP4"]
-                        
-                        #obtenemos la fecha de cuando se inicio la reunion
-                        fecha_invalid_format = recording_shared_screen[0]["recording_start"]
-                        #la convertimos en un formato valido ya que el tipo de objeto que es la fecha es:"2023-10-02T20:25:55Z"
-                        fecha_folder = datetime.strptime(fecha_invalid_format, "%Y-%m-%dT%H:%M:%SZ")
-                        
-
-                        #se creara una carpeta para esa grabacion, el nombre de la carpeta sera la fecha de la grabacion
-                        record_folder = os.path.join(folder_clienta_name,f"{fecha_folder.date()}")
-                        if not os.path.exists(record_folder):
-                            os.makedirs(record_folder)
+                        records.append(response_json["meetings"][record])
+                
+                """
+                    De la lista de clientes que se obtenga de la fecha dada, se van a comparar los ids de las reuniones de zoom
+                    para ver cuales clientes tienen una reunion de zoom en la nube
+                """
+                clients_info = self.get_client_by_meetings_ids(self.clients[1],records,user)
+                print(f"Reuniones varias obtenidas {clients_info} \n")
+                return clients_info
+                
+                        # 
+                        # 
+                        # 
+                        # #lista de diccionarios de las grabaciones 
                         
                         #una vez creada la carpeta, se descargara el video en la ruta del folder de la clienta con la fecha de la grabacion
-                        with open(os.path.join(record_folder,"grabacion.mp4"),"wb") as zoom_record:
+                        # with open(os.path.join(record_folder,"grabacion.mp4"),"wb") as zoom_record:
                             
-                            tokens = self.get_zoom_credentials()
-                            #video = self.download_url_video(url=f"{records_types['download_url']}")
-                            video = requests.get(url=recording_shared_screen[0]['download_url'],stream=True,headers={
-                                'Authorization':'Bearer {}'.format(tokens[0])
-                            })
+                        #     tokens = self.get_zoom_credentials()
+                        #     #video = self.download_url_video(url=f"{records_types['download_url']}")
+                        #     video = requests.get(url=recording_shared_screen[0]['download_url'],stream=True,headers={
+                        #         'Authorization':'Bearer {}'.format(tokens[0])
+                        #     })
 
-                            # Guardar el progreso de descarga
-                            download_progress = 0
+                        #     # Guardar el progreso de descarga
+                        #     download_progress = 0
 
-                            # Definir el tamaño del búfer para leer los datos
-                            buffer_size = 1024
-                            #Se encapsula en un try por si ocurren errores inesperados al descargar la reunion
+                        #     # Definir el tamaño del búfer para leer los datos
+                        #     buffer_size = 1024
+                        #     #Se encapsula en un try por si ocurren errores inesperados al descargar la reunion
                             
-                            try:
-                                for data in video.iter_content(chunk_size=buffer_size):
-                                    zoom_record.write(data)
+                        #     try:
+                        #         for data in video.iter_content(chunk_size=buffer_size):
+                        #             zoom_record.write(data)
                                     
-                                    # Actualizar el progreso de descarga si hay un tamaño de archivo válido
-                                    if  recording_shared_screen[0]["file_size"] > 0:
-                                        download_progress += len(data)
-                                        # Calcular el porcentaje de descarga
-                                        percentage_progress  = (download_progress / recording_shared_screen[0]["file_size"]) * 100
-                                        # Imprimir el porcentaje de descarga
-                                        print(f"Progreso de descarga de la descarga: {percentage_progress :.2f}%\n")
+                        #             # Actualizar el progreso de descarga si hay un tamaño de archivo válido
+                        #             if  recording_shared_screen[0]["file_size"] > 0:
+                        #                 download_progress += len(data)
+                        #                 # Calcular el porcentaje de descarga
+                        #                 percentage_progress  = (download_progress / recording_shared_screen[0]["file_size"]) * 100
+                        #                 # Imprimir el porcentaje de descarga
+                        #                 print(f"Progreso de descarga de la descarga: {percentage_progress :.2f}%\n")
 
-                                #para descargar el video necesito obtener la url, lo que sucede es que zoom crea un array de dicionarios, con el tipo de grabacion que es, el chat, el audio y el video
-                                #necesito filtrar esto
-                                print(f"En el folder {record_folder} se descargara la grabacion de la url: {recording_shared_screen[0]['download_url']}\n")
+                        #         #para descargar el video necesito obtener la url, lo que sucede es que zoom crea un array de dicionarios, con el tipo de grabacion que es, el chat, el audio y el video
+                        #         #necesito filtrar esto
+                        #         print(f"En el folder {record_folder} se descargara la grabacion de la url: {recording_shared_screen[0]['download_url']}\n")
                                 
                                 
                                 
-                            except Exception as e:
-                                error = str(e)
-                                load_json_error(error)
-                                return f"No se pudo guardar el video ya que ocurrio esto: {e}"
+                        #     except Exception as e:
+                        #         error = str(e)
+                        #         return f"No se pudo guardar el video ya que ocurrio esto: {e}"
                             
-                            #Una vez se haya descargado correctamente el video, se hara la solicitud para enviarlo al draft del cloud de zoom
-                            else:
+                        #     #Una vez se haya descargado correctamente el video, se hara la solicitud para enviarlo al draft del cloud de zoom
+                        #     else:
                                 
-                                print("Se descargo correctamente el video \n")
+                        #         print("Se descargo correctamente el video \n")
                                 
 
-                                #intenta enviar al draft del cloud la reunion desde la api de zoom, una vez el archivo es descargado
-                                try:
+                        #         #intenta enviar al draft del cloud la reunion desde la api de zoom, una vez el archivo es descargado
+                        #         try:
 
-                                        delete_recording = requests.delete(url="https://api.zoom.us/v2/meetings/{}/recordings/?delete=trash".format(response_json["meetings"][record]['id']),headers=self.get_header_access_token_params())
+                        #                 delete_recording = requests.delete(url="https://api.zoom.us/v2/meetings/{}/recordings/?delete=trash".format(response_json["meetings"][record]['id']),headers=self.get_header_access_token_params())
                                         
-                                        #Se hacen 2 diccionarios, incluyendo la informacion del video y del cliente para el proceso de subida en el drive
-                                        video_info = {
-                                            'video_file_name':"Grabacion de la reunion de {}.mp4".format(fecha_folder.date()),
-                                            'video_src':os.path.join(record_folder,"grabacion.mp4")
-                                        }
+                        #                 #Se hacen 2 diccionarios, incluyendo la informacion del video y del cliente para el proceso de subida en el drive
+                        #                 video_info = {
+                        #                     'video_file_name':"Grabacion de la reunion de {}.mp4".format(fecha_folder.date()),
+                        #                     'video_src':os.path.join(record_folder,"grabacion.mp4")
+                        #                 }
                                     
-                                        client_info_details = {
-                                            'email':clienta_info[0]['email'],
-                                            'client_folder_name':clienta_info[0]['nombre']
-                                        }
-                                        upload_zoom_video(video_info,client_info_details)
+                        #                 client_info_details = {
+                        #                     'email':clienta_info[0]['email'],
+                        #                     'client_folder_name':clienta_info[0]['nombre']
+                        #                 }
+                        #                 #upload_zoom_video(video_info,client_info_details)
                                         
-                                        delete_recording.raise_for_status()
+                        #                 delete_recording.raise_for_status()
                                         
-                                except requests.exceptions.HTTPError as e:
-                                    error = str(e)
-                                    load_json_error(error)
+                        #         except requests.exceptions.HTTPError as e:
+                        #             error = str(e)
                                         
-                                    print("No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json()))
+                        #             print("No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json()))
                                         
-                                    return "No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json())                      
+                        #             return "No se pudo eliminar la reunion debido a que: {}\n".format(delete_recording.json())                      
         else:
             #Se retorna el error
             return self.clients[1]
@@ -583,6 +557,158 @@ class ZoomService():
         
         
     #Espera una lista de clientes y va a comparar el id de la reunion con el meeting_id, para asi saber a que cliente pertenece esa reunion
-    def get_client_by_meeting_id(self,clients,meeting_id):
-        client = [(cliente) for cliente in clients if cliente['reunion_id'] == meeting_id]
-        return client
+    def get_client_by_meeting_id(self,clients,meeting,clients_mentor):
+        
+         
+        
+        for cliente in clients:
+            
+            if cliente['reunion_id'] == meeting['id']:
+                
+                
+                    client_instance = Client.get_client(cliente['email'])
+                    #si no obtenemos una instancia, es decir none, creamos el cliente
+                    if client_instance == None:
+                        Client.objects.create(name=cliente['nombre'],email=cliente['email'],mentor=clients_mentor)
+                    
+                    
+                    
+                    
+                    print("Nombre de la clienta: {} Correo de la clienta: {}".format(cliente['nombre'],cliente['email']))
+                    
+                    #se creara un folder con el nombre del cliente
+                    folder_clienta_name = os.path.join(self.storage_url,cliente['nombre'])
+
+
+                    #se crea la carpeta con el nombre de la clienta si no existe                         
+                    #if not os.path.exists(folder_clienta_name):
+                        #   os.makedirs(folder_clienta_name)
+                        
+
+                    #obtenemos la fecha de cuando se inicio la reunion
+                    fecha_invalid_format = meeting["start_time"]
+                    #la convertimos en un formato valido ya que el tipo de objeto que es la fecha es:"2023-10-02T20:25:55Z"
+                    fecha_folder = datetime.strptime(fecha_invalid_format, "%Y-%m-%dT%H:%M:%SZ")
+                    
+                    #se forma una ruta, para crear una carpeta para esa grabacion en esa ruta, el nombre de la carpeta sera la fecha de la grabacion con un formato DATE Ej(2020-12-12)
+                    record_folder = os.path.join(folder_clienta_name,f"{fecha_folder.date()}")
+                    
+                    cliente['client_db_id'] = client_instance.id
+                    client_info = {
+                            "client_info":cliente,
+                            #informacion de la reunion de la grabacion
+                            "client_meeting_details":{
+                                "id":meeting['id'],
+                                "title":meeting['topic'],
+                                "date":meeting['start_time'],
+                                "meeting_time":meeting['duration']
+                                                    },
+                                #Lista de las lista de archivos de las grabaciones, solo almacenara la que es un video y su extension debe der ser MP4 (es necesario, ya que manualmente se tendria que ver)
+                                #cual es el indice que tiene ese archivo MP4, y estos indices pueden variar dependiendo si hay archivos de texto o no etc...
+                                "client_record_details":
+                                    
+                                 [
+                            #estos son los campos que se agregaran de recording_files en la lista por comprension
+                            ({"file_size":media['file_size'],"download_url":media['download_url'],"extension":media['file_extension'],"play_url":media['play_url']})
+                            #cada recording_files que se encuentre sera representando como media, y solo se guardara el que su extension sea mp4
+                            for media in meeting['recording_files'] if media['file_extension'] == "MP4"
+                            
+                            ],       
+                            "client_folder_details": {"folder_record_name":record_folder,"folder_record_client":folder_clienta_name}
+                        }
+                    
+                
+                    print(f"Info {client_info} \n")
+                    
+                    
+                    
+                    return client_info
+            else:
+                return {"not_found_client":meeting}
+
+    def get_client_by_meetings_ids(self,clients,meetings,clients_mentor):
+        
+        #lista de clientes relacionados a un id de zoom 
+        clientes = []
+        #Se alamcenan las reuniones de zoom que no tienen a un cliente relacionado en calendly
+        zoom_meeting_without_client = [ ]
+        #Itero sobre los clients
+        for i in range (len(clients)):
+            print(meetings)
+            
+            #itero sobre las reuniones para compararlo con el cliente que este iterando
+            for j in range(len(meetings)):
+                #verifico si el cliente que estoy iterando es igual al de la reunion
+                if clients[i]['reunion_id'] == meetings[j]['id']:
+                    print("Cumplio este \n ")
+                    #si lo es, lo agrego
+                    
+                    
+                    client, client_created = Client.get_or_create_client(name=clients[i]['nombre'],email=clients[i]['email'],mentor=clients_mentor)
+                
+                    print(client)
+                    print(client_created)
+                    
+                    
+                        
+                    #se creara un folder con el nombre del cliente
+                    folder_clienta_name = os.path.join(self.storage_url,f"{clients[i]['nombre']}")
+
+                    #obtenemos la fecha de cuando se inicio la reunion
+                    fecha_invalid_format = meetings[j]["start_time"]
+
+                    #la convertimos en un formato valido ya que el tipo de objeto que es la fecha es:"2023-10-02T20:25:55Z"
+                    fecha_folder = datetime.strptime(fecha_invalid_format, "%Y-%m-%dT%H:%M:%SZ")
+                    
+
+                    #se creara una carpeta para esa grabacion, el nombre de la carpeta sera la fecha de la grabacion
+                    record_folder = os.path.join(folder_clienta_name,f"{fecha_folder.date()}")
+                    date_invalid =datetime.strptime(meetings[j]['start_time'], "%Y-%m-%dT%H:%M:%SZ")
+
+                    client_info = {
+                        "client":clients[i],
+                        #informacion de la reunion de la grabacion
+                        "client_meeting_details":{
+                            "id":meetings[j]['id'],
+                            "title":meetings[j]['topic'],
+                            "date":date_invalid.strftime("%d-%m-%Y"),
+                            "meeting_time":meetings[j]['duration']
+                                                },
+                        #solo se mostrara la informacion de la grabacion que sea un MP4, ya que zoom lo que nos da es una lista con las diferentes media que se crean de la grabacion audio, video etc
+                        #se hara un diccionario con ese media incluyendo lo que pesa, la url de descarga etc
+                        "client_record_details":[
+                            #estos son los campos que se agregaran de recording_files en la lista por comprension
+                            ({"file_size":media['file_size'],"download_url":media['download_url'],"extension":media['file_extension'],"play_url":media['play_url']})
+                            #cada recording_files que se encuentre sera representando como media, y solo se guardara el que su extension sea mp4
+                            for media in meetings[j]['recording_files'] if media['file_extension'] == "MP4"],
+                        "client_folder_details":{
+                            #nombre del folder donde se guardara la grabacion
+                            "folder_record_name":record_folder,
+                            "folder_record_client":folder_clienta_name
+                        }
+                    }
+                    
+                    clientes.append(client_info)
+                else:
+                    date_invalid =datetime.strptime(meetings[j]['start_time'], "%Y-%m-%dT%H:%M:%SZ")
+                    meet = {
+                        "id":meetings[j]['id'],
+                        "title":meetings[j]['topic'],
+                        "date":date_invalid.strftime("%d-%m-%Y"),
+                        "record_details":[
+                            #estos son los campos que se agregaran de recording_files en la lista por comprension
+                            ({"file_size":media['file_size'],"download_url":media['download_url'],"extension":media['file_extension'],"play_url":media['play_url']})
+                            #cada recording_files que se encuentre sera representando como media, y solo se guardara el que su extension sea mp4
+                            for media in meetings[j]['recording_files'] if media['file_extension'] == "MP4"
+                            
+                            ]
+                            }
+                    zoom_meeting_without_client.append(meet)
+                    
+                    
+        #devolvemos los clientes que tienen una reunion con un evento de calendly, y a los que no se le encontro un evento de calendly
+        return {"clients":clientes, "not_found_client":zoom_meeting_without_client}
+
+
+
+    

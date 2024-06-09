@@ -2,7 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from datetime import datetime,timedelta
-from errors.views import load_json_error
+from apps.errors.views import load_json_error
 load_dotenv()
 
 """
@@ -37,6 +37,7 @@ class CalendlyService():
         return [(event) for event in events['collection'] if not event.get('cancellation') ]
     
     def get_sheduled_events(self,start_date,end_date):
+        
 
         #Retornaremos una lista con (1 y la respuesta) si no hubo errores y se proceso la solicitud
         #Retornaremos una lista con( 0 y el error )si hubieron errores al procesar la solicutd
@@ -44,15 +45,15 @@ class CalendlyService():
 
         try:
             #Endpoint de calendly para obtener los eventos dado un tiempo minimo y maximo de fechas, se obtendran los de los ultimos 7 dias, contando desde que se ejecute el script
-            aurl = f"https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time={start_date.strftime('%Y-%m-%d') + 'T00:00:00.000000Z'}&max_start_time={end_date.strftime('%Y-%m-%d') + 'T00:00:00.000000Z'}"
-            url = "https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time=2024-05-09T00:00:00.000000Z&max_start_time=2024-05-10T00:00:00.000000Z"
+            url = f"https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time={start_date}&max_start_time={end_date}"
+            aurl = "https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time=2024-05-09T00:00:00.000000Z&max_start_time=2024-05-10T00:00:00.000000Z"
 
             #hacemos la solicitud a la url, enviando las cabeceras necesarias incluyendo el token
             scheduled_events = requests.get(url=url,headers=self.headers)
-            
+            print(f"URL DE CALENDLY PARA LA SOLICITUD {scheduled_events.url}")
             #convertimos la respuesta en un formato json, para poder acceder a el
             response = scheduled_events.json()
-            
+            print(response)
             #al hacer la solicitud, obtendremos 2 objetos, una collection y un paginatio
             #collection es el que contiene el resultado de los eventos, mientras que pagination no es necesario ya que solo brina informacion de tokens de pagina y conteos de resultados
             response.pop("pagination")

@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import UserZoomEmail,Zoom
 
-# Register your models here.
+admin.site.register(UserZoomEmail)
+admin.site.register(Zoom)

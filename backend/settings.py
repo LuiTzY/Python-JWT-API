@@ -30,7 +30,10 @@ BASE_APPS = [
 LOCAL_APPS = [
     'apps.users',
     'apps.zoom',
-    'apps.download_notifications'
+    'apps.download_notifications',
+    'apps.errors',
+    'apps.calendly',
+    'apps.clients'
 ]
 
 #Third apps 
