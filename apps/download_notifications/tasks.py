@@ -14,9 +14,7 @@ async def start_downloads(clients,mentor_credentials):
     #Esta funcion va a descargar cada video, lo que siempre creara una httpp sesion independiente de cada video
 async def download_video(data,channel_name,mentor_credentials):
         headers = {
-            "Authorization":mentor_credentials,
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
+            "Authorization":mentor_credentials
         }
 
         #se crea una sesion http para el cliente
