@@ -2,9 +2,7 @@ import aiohttp
 import asyncio
 from channels.layers import get_channel_layer
 import os
-from yarl import URL
 
-#Las corutinas son funciones que trabajan asincronamente, tareas que duren mas que otras sera ejecutadas primeros, nunca va a esperar a que la tarea anterior termine 
 
  #Va a recibir una tupla de las urls junto con informacion del video incluyendo el save_path
 async def start_downloads(clients,mentor_credentials):
@@ -16,23 +14,24 @@ async def start_downloads(clients,mentor_credentials):
     #Esta funcion va a descargar cada video, lo que siempre creara una httpp sesion independiente de cada video
 async def download_video(data,channel_name,mentor_credentials):
         headers = {
-            "Authorization":mentor_credentials
-        }
-        url = URL(data['client_record_details'][0]['download_url'], encoded=True)
+            "Authorization":mentor_credentials,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
-        print(headers)
+        }
+
         #se crea una sesion http para el cliente
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=headers) as session:
+            print(session.headers.get("Authorization"))
+            print()
+            
+            print(session.headers)
+            print("Hedeaers \n")
+            
             #Se llama asincronamente para obtener el video
-            async with session.get(url=data['client_record_details'][0]['download_url'],  headers=headers) as response_video:
+            async with session.get(data['client_record_details'][0]['download_url']) as response_video:
+                
                 print("Cabeceras de la solicitud:")
                 
-                for key, value in headers.items():
-                    print(f"{key}: {value}\n")               
-                
-                
-                print(f" Url {response_video.url} \n")
-                print(await response_video.text())
                 if response_video.status == 200:
                     #dentro de las cabeceras obtenemos lo que pesa el archivo en bytes y lo convertimos a un entero ya que por defecto es un string
                     total_size = data['client_record_details']['size']
@@ -61,7 +60,6 @@ async def download_video(data,channel_name,mentor_credentials):
                 
                 else:
                     
-                    print(f"No se puede descargar DEBIDO A ESTO {response_video.content}\n")
                     print(f"No se puede descargar DEBIDO A ESTO {response_video.text} {response_video.status}\n")
 
 
