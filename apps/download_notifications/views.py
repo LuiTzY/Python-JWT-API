@@ -46,12 +46,16 @@ class ZoomRecordDownloadView(APIView):
       
       #devolvemos las grabaciones encontradas con la cuenta del mentor
       records = service.download_zoom_recordings(start_date,end_date,mentor)
-      print(f"DATA TO SEND: {records} \n")
-      
+      print(records)
       if 'records_found' in records:
           if records['records_found'] == 0:
-              return []
-          start_downloads_sync(records['records_info'],f"Bearer {mentor_credentials.access_token}")
+            return Response({"message":"No records matches with this date"},status=status.HTTP_404_NOT_FOUND)
+        
+          print("No llega \n")
+          #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcionce de start_downloads_async y se le pasan los argumentos de la funcion
+          thread = Thread(target=start_downloads_sync, args=(records['records_info'],mentor_credentials.access_token))
+          #Iniciamos el hilo
+          thread.start()
           
       print(f"Grabaciones encontradas \n")
       
@@ -77,6 +81,7 @@ class ZoomRecordDownloadView(APIView):
             thread.start()
             #Evniamos un mensaje de que la solicitud se proceso con exito
             return Response({"message": "Download Started"}, status=status.HTTP_200_OK)
+        #en el caso de que el token haya expirado, haremos la solicitud nuevamente para obtener las grabaciones
         elif recordings[0] == 4:
             recordings = service.zoom_api_get_requests(f"https://api.zoom.us/v2/users/me/recordings?from={start_date}&to={end_date}",request.user)
             #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcionce de start_downloads_async y se le pasan los argumentos de la funcion

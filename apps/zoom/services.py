@@ -284,7 +284,7 @@ class ZoomService():
         if response_json[0] == 2:
             return {"message":"Las credenciales de zoom fueron actualizadas","status":"200"}
         #se convierten los datos en formato json de la respuesta de la api de zoom, para poder acceder a ellos y manejarlos           
-        print(response_json)
+        
         print("Se obtuvieron esta cantidad de grabaciones de la fecha: {} grabaciones encontradas: {}\n".format(start_date.strftime("%Y-%m-%d"),response_json[1]['total_records']))
         
         
@@ -309,13 +309,11 @@ class ZoomService():
                 #devuelve la un diccionario de la grabacion
                 record = self.get_one_recording_full_info(response_json[1],mentor) #pasamos el 0 ya que ahi es que se encuentra los datos de la solicitud de zoom
                 recordings_info.append(record)
-                print(f"Esta es la informaciona agregada{recordings_info} \n")
                 
             elif response_json[1]['total_records'] > 1:
                 print(f"Obtuvimos varias grabaciones dentro del rango de fechas establecido {start_date} {end_date}\n")
                 #Si hay mas de una reunion entrara aqui y devolvera una lista de diccionarios de la grabaciones
                 recordings = self.get_multiple_recordings_full_info(response_json[1],mentor)
-                print(f"Grabaciones que se obtuvieron {recordings} \n")
                 recordings_info.append(recordings)
 
             else:
@@ -346,7 +344,6 @@ class ZoomService():
                     #Obtenemos loc clientes y hacemos el proceso de la automatizacion
                     #guardamos la informacion de la clienta que coincida con el id de la reunion relacionado
                     clienta_info = self.get_client_by_meeting_id(self.clients[1],response_json["meetings"][0],mentor)
-                    print(f"Informacion de la clienta que conciede con el id {clienta_info} id de la reunion {response_json['meetings'][0]['id'] }")
 
                     #verficamos si la grabacion tiene una clienta relacionada
                     if 'not_found_client' in clienta_info:
@@ -618,7 +615,6 @@ class ZoomService():
                         }
                     
                 
-                    print(f"Info {client_info} \n")
                     
                     
                     
@@ -634,7 +630,6 @@ class ZoomService():
         zoom_meeting_without_client = [ ]
         #Itero sobre los clients
         for i in range (len(clients)):
-            print(meetings)
             
             #itero sobre las reuniones para compararlo con el cliente que este iterando
             for j in range(len(meetings)):
@@ -646,8 +641,6 @@ class ZoomService():
                     
                     client, client_created = Client.get_or_create_client(name=clients[i]['nombre'],email=clients[i]['email'],mentor=clients_mentor)
                 
-                    print(client)
-                    print(client_created)
                     
                     
                         
