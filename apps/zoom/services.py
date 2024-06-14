@@ -19,7 +19,7 @@ class ZoomService():
         self.clientSecret = os.getenv("clientSecret")
         self.redirectURL = os.getenv("redirectURL")
         self.storage_url = "D:/Zoom Grabaciones/"
-        self.calendly = CalendlyService()
+        self.calendly = None
         self.clients = ''
     
        #esta funcion devolvera los parametros necesarios en la cabecera de la peticion para la autorizacion
@@ -232,8 +232,10 @@ class ZoomService():
             
             return False
         
-    def download_zoom_recordings(self,start_date,end_date,mentor):
+    def download_zoom_recordings(self,start_date,end_date,mentor,calendly_token):
         
+        #asignamos a los clientes la instancia de la clase de calendly junto con el token recibido, debido a esto sabra siempre a quien pertenecera la informacion
+        self.clients = CalendlyService(calendly_token)
          # Convertimos las fechas a cadenas en el formato correcto
         start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
         end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")

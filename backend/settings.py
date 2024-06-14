@@ -33,7 +33,9 @@ LOCAL_APPS = [
     'apps.download_notifications',
     'apps.errors',
     'apps.calendly',
-    'apps.clients'
+    'apps.clients',
+    'apps.gmail',
+    'apps.drive'
 ]
 
 #Third apps 

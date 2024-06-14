@@ -6,6 +6,7 @@ from datetime import datetime,timedelta
 from rest_framework.views import APIView
 from apps.zoom.services import ZoomService 
 from apps.zoom.models import Zoom
+from apps.calendly.models import Calendly
 from rest_framework.response import Response
 
 videos = (("https://www.youtube.com/watch?v=YQbgdIvC4Io","D:/Zoom Grabaciones/vid.mp4"),
@@ -21,6 +22,8 @@ videos = (("https://www.youtube.com/watch?v=YQbgdIvC4Io","D:/Zoom Grabaciones/vi
    oorectamete debido a que un token se haya invalidado etc.
 """
 service = ZoomService()
+
+#tener en cuenta que el que consuma esta vista es xq quiere hacer la automatizacion completa por lo que debe de tener zoom,calendly,notion y drive autorizados
 class ZoomRecordDownloadView(APIView):
    def get (self,request,format=None):
       
@@ -41,11 +44,30 @@ class ZoomRecordDownloadView(APIView):
       if mentor is None:
           return Response({"message":"You must be a mentor to have this functionality"},status=status.HTTP_409_CONFLICT)
       
+      apps_needed = []
+      #Registro de valores retornados por cada app, del mentor recibido, asi sabremos si en una de estas apps el mentor no esta registrado
       
+      #credenciales de zoom obtenidas por un mentor
       mentor_credentials = Zoom.get_zoom_credentials_by_mentor(mentor)
+      apps_needed.append(["zoom",mentor_credentials])
+      calendly_credentials = Calendly.get_calendly_token_by_mentor(mentor)
+      apps_needed.append(["calendly",calendly_credentials])
+      #aqui faltaria obtener las credenciales de drive,notion y email
+
+      for app in apps_needed:
+          if app[1] == None:
+              return Response({"message":"You miss this app to automatize your clients records","app_name":app[0]},status=status.HTTP_403_FORBIDDEN)
+          
+          
+          
+      
+    #   if mentor_credentials == None:
+    #       return Response({"message":"To use this you need authorize our zoom app for automatize this"},status=status.HTTP_403_FORBIDDEN)
+      
+      
       
       #devolvemos las grabaciones encontradas con la cuenta del mentor
-      records = service.download_zoom_recordings(start_date,end_date,mentor)
+      records = service.download_zoom_recordings(start_date,end_date,mentor,calendly_credentials)
       print(records)
       if 'records_found' in records:
           if records['records_found'] == 0:

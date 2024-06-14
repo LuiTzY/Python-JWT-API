@@ -1,7 +1,6 @@
 import os
 import requests
 from dotenv import load_dotenv
-from datetime import datetime,timedelta
 from apps.errors.views import load_json_error
 load_dotenv()
 
@@ -18,23 +17,51 @@ load_dotenv()
 #Las fechas que se buscaran seran el mismo rango de fechas que de zoom
 
 class CalendlyService():
-    def __init__(self):
+    def __init__(self,token):
+        self.token = token
         self.headers = {    
         "Content-Type": "application/json",
-        'Authorization':'Bearer {}'.format(os.getenv("CalendlyTokenApi"))
+        'Authorization':'Bearer {}'.format(self.token.calendly_token) #Lo que recibiremos es un objeto de tipo calendly por lo que accederemos a su atributo del token
         }
-        
-       
         #aqui se va a guardar una lista de los eventos que sean presenciales
-        self.presencial_events_uri = []
+        self.presencial_events_uri = [os.getenv("Calendly_presencial_event_uri")]
         
+    async def test_token(self):
+        try:
+            personal_info = await requests.get("https://api.calendly.com/users/me",headers=self.headers)
+            personal_info.raise_for_status()
+            
+            print(f"Codigo de estado {personal_info.status_code}")
+            if personal_info.status_code == 200:
+                return True
+            
+        except Exception as e:
+            print(f"Ocurrio un error inesperado {e} \n")
+            return False
     
+ 
+        
+    #metodo que devovlera la informacion de la cuenta del usuario
+    def get_calendly_user_information(self):
+        print(f"Cabeceras {self.headers}")
+        try:
+            
+            personal_info = requests.get("https://api.calendly.com/users/me",headers=self.headers)
+            personal_info.raise_for_status()
+            
+        except Exception as e:
+            print(f"Ocurrio un error al intentar obtener la informacion del usuario, codigo de estado {personal_info.status_code} ocurrio debido a esto: {e}")
+            return {}
+        
+        account_details = personal_info.json()
+        return account_details['resource']
+        
     #Se guardaran en una lista por comprension solo los eventos que no hayan sido cancelados
     def filter_actived_events(self,events):
         #Obtendremos una lista de collection donde cada indice representa un evento programado
         #por lo que iteramos sobre ella obteniendo asi el event y verificando si dentro de este objeto
         #se encuentra el diccionario de cancellation
-        return [(event) for event in events['collection'] if not event.get('cancellation') ]
+        return [(event) for event in events['collection'] if not event.get('cancellation') and event.get("uri") == self.presencial_events_uri ]
     
     def get_sheduled_events(self,start_date,end_date):
         
@@ -46,7 +73,6 @@ class CalendlyService():
         try:
             #Endpoint de calendly para obtener los eventos dado un tiempo minimo y maximo de fechas, se obtendran los de los ultimos 7 dias, contando desde que se ejecute el script
             url = f"https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time={start_date}&max_start_time={end_date}"
-            aurl = "https://api.calendly.com/scheduled_events?user=https://api.calendly.com/users/DGFGNV3BZMXVXALA&count=100&min_start_time=2024-05-09T00:00:00.000000Z&max_start_time=2024-05-10T00:00:00.000000Z"
 
             #hacemos la solicitud a la url, enviando las cabeceras necesarias incluyendo el token
             scheduled_events = requests.get(url=url,headers=self.headers)
