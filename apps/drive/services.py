@@ -4,8 +4,6 @@ import uuid
 import httpx
 import os
 from dotenv import load_dotenv
-from asgiref.sync import sync_to_async
-from channels.db import database_sync_to_async
 
 import asyncio
 load_dotenv()
@@ -217,11 +215,59 @@ class DriveService():
             try:
                 response = await client.get(endpoint)
                 response.raise_for_status()
-                return {"files": response.json()}
+                return {"response": response.json()}
             except httpx.HTTPError as e:
                 return {"error": f"{e}"}
-            
-            
+    
+    async def create_client_drive_folder(self):
+        file_metadata = {
+        "name": f"{}",# aqui va el nombre del cliente perced
+        "mimeType": "application/vnd.google-apps.folder",
+        'parents':''#id del folder donde ira todos los clientes
+        }
+
+        #en el response de la solicitud se encontrara el id de la carpeta creada
+        #luego creamos el registro de la clienta en la base de datos, guardando el id de su folder para su posterior uso
+        async with httpx.AsyncClient(transport=TokenAuthTransport(self)) as client:
+            response = client.post(url="https://www.googleapis.com/drive/v3/files",headers=self.headers, data=file_metadata)
+            response.raise_for_status()
+            return {"created":{response['id']}}
+        
+    async def post_drive_req(self, endpoint):
+        """
+            aqui necesitaremos la capa de transporte de token auth, para handlear posibles errores que ocurran en nuestra solicitud y
+            le pasamos la instancia de httpx.AsyncHTTPTransport() mediante base_transport, esto xq tiene los metodos necesarios para
+            handlear una solicitud que hagamos mendiante el y pasamos el objeto de self, que es la instancia de la clase de auth service
+            para poder acceder a las credenciales
+        
+        """
+        data = {
+            "uploadType":"resumable",
+            "title":"prueba.txt",
+            'mimeType': 'video/mp4',
+            'parents':''#aqui va el id del folder de la clienta que se haya creado
+        }
+        headers = {
+        'Authorization': f'Bearer {"access-token"}',
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': 'video/mp4',  # Tipo MIME del contenido del archivo
+        'X-Upload-Content-Length': 'TAMANO_DEL_ARCHIVO_EN_BYTES'  # Tamaño del archivo que se va a subir
+                    }
+        async with httpx.AsyncClient(transport=TokenAuthTransport(self)) as client:
+            try:
+                response = await client.post(endpoint)
+                response.raise_for_status()
+                return {"response": response.json()}
+            except httpx.HTTPError as e:
+                return {"error": f"{e}"}
+           
+    async def handle_async_post_req(self,endpoint):
+        
+        print("Se ejecutara esta funcion \n")
+        #fn debe de ser el nombre de una funcion de la clase
+        result = await self.post_drive_req(endpoint)
+        
+        return result 
         """
             Al utilizar un transport en un asyncClient lo que hacemos es decir que nuestra solicitud
             sera manejada por esa capa de transporte, que al final lo que hace es la entrega de datos

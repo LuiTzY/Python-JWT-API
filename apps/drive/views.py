@@ -21,13 +21,13 @@ class DriveAuthView(APIView):
         if mentor == None:
             return Response({"message":"you must be a member to have this funcionality"})
         
-        drive = DriveService(mentor,"https://www.googleapis.com/drive/v2/files")
+        drive = DriveService(mentor,"https://www.googleapis.com/drive/v2/about")
         
         files = asyncio.run(drive.handle_async_req(drive.endpoint))     
 
-        if 'files' in files:
+        if 'response' in files:
             print("Se encontraron los archivos")
-            return Response({"message":"This endpoint works",'files':files},status=status.HTTP_200_OK)
+            return Response({'response':files['response']},status=status.HTTP_200_OK)
 
         return Response({"message":"This endpoint workss","drive":files},status=status.HTTP_200_OK)
     

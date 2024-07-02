@@ -1,8 +1,9 @@
 from django.db import models
 from apps.users.models import User 
 from django.db import models, IntegrityError, transaction
-
-
+from asgiref.sync import sync_to_async,async_to_sync
+import asyncio
+from channels.db import database_sync_to_async
 
 class Mentor(models.Model):
     name = models.CharField(max_length=120)
@@ -12,7 +13,9 @@ class Mentor(models.Model):
     def __str__(self):
         return f"Mentor: {self.name}"
     
+    
     @classmethod
+    
     def get_mentor(cls,mentor):
         if not mentor:
             #si no se proporciona una instancia de un usuario retornamos none
@@ -45,3 +48,12 @@ class Client(models.Model):
             return  cls.objects.get(email=email)
         except cls.DoesNotExist:
             return None
+async def get_mi_model(user):
+    
+    mentor = await database_sync_to_async( Mentor.objects.get)(user)
+    return mentor
+
+async def wrap_data(user):
+    print("Hola")
+    user = await get_mi_model(user)
+    return user

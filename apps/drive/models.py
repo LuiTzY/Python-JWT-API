@@ -1,5 +1,5 @@
 from django.db import models
-from apps.clients.models import Mentor
+from apps.clients.models import Mentor,Client
 
 
 class Drive(models.Model):
@@ -36,3 +36,10 @@ class UserDriveEmail(models.Model):
         
         except cls.DoesNotExist:
             return None
+        
+        
+class client_drive(models.Model):
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    folder_id = models.CharField(max_length=120)
+    folder_name = models.CharField(max_length=120)

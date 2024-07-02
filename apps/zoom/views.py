@@ -1,5 +1,5 @@
 from .models import Zoom,UserZoomEmail
-from .services import ZoomService
+from .services import ZoomService,ZoomAuthService
 from rest_framework import status
 from apps.clients.models import Mentor
 from django.db import IntegrityError
@@ -9,7 +9,7 @@ from .serializers import ZoomCredentialsSerializer
 from django.core.exceptions import ObjectDoesNotExist 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+import asyncio
 
 """
     1: Las vistas basadas en clases solo aceptara los metodos que tengan definidos en ellas mismas, por lo que si se intenta algunoq que no este respondera con metodo not allowed
@@ -19,7 +19,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
     lo que seria una mala practica y problemas de seguridad
 """
 
-service = ZoomService()
 
 #Vista para manejar el tema de las credenciales de una cuenta de zoom que autorizo una app
 class ZoomCredentialsView(APIView):
@@ -54,26 +53,27 @@ class ZoomCredentialsView(APIView):
         
         #Buscamos si obtendremmos unas credenciales asociadas para verificar si los correos coinciden, ya que si no, es xq la app no ha sido autorizada hasta el momento
         mentor_credentials = Zoom.get_zoom_credentials_by_mentor(mentor)
-            
+        
         if mentor_credentials == None:
             #Si no existe es xq si hay un correo relacionado a una cuenta, pero el usuario no ha auntenticado la app de zoom
             return Response({"error":"Not credentials asociated with this user, you must authorize the zoom app to get your details"},status=status.HTTP_403_FORBIDDEN)
         
-        
+        #Siempre se le pasara una instancia de un mentor que si tenga credenciales
+        service = ZoomService(mentor)
         
         #obtenemos informacion acerca del correo del cliente, pasandole el endpoint y el mentor que pertenecera al usuario que haga la solicitud al que pertenece la solicitud
-        zoom_user_account_info = service.zoom_api_get_requests("https://api.zoom.us/v2/users/me",mentor)
+        zoom_user_account_info = asyncio.run(service.get_zoom_req("https://api.zoom.us/v2/users/me"))
         
         #verficamos a ver si obtuvimos la informacion correcta ya que devolvera una lista con un numero 3 y los datos si no hubo errores en la misma
-        if zoom_user_account_info[0] == 3:     
+        if  'response' in zoom_user_account_info:     
             
             #nota: No es necesario verificar si los correos coinciden ya que al momento de guardar las credenciales esto se verifica
             #enviamos la informacion de la cuenta, ya que si coinciden
-            return Response({"zoom_account_details":zoom_user_account_info[1]},status=status.HTTP_202_ACCEPTED)
+            return Response({"zoom_account_details":zoom_user_account_info['response']},status=status.HTTP_202_ACCEPTED)
         
         #caso contrario devolvemos el error
         else:
-            return Response({"error":f"Unexpected error ocurred {zoom_user_account_info[0]}"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error":f"Unexpected error ocurred {zoom_user_account_info['error']}"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
     def post(self,request,format=None):
@@ -102,15 +102,18 @@ class ZoomCredentialsView(APIView):
         
         print("Se obtuvieron los paramas \n")
         
-            
+        #Psamos el codigo de autorizacion
+        service = ZoomAuthService(auth_code)
         
-        credentials = service.get_access_token(auth_code)
+        #Tomara el codigo de autorizacion que le pasamos a la instancia e hara la solicitud        
+        credentials = asyncio.run(service.get_access_token())
+        print(credentials)
         #verificamos si obtuvimos las credenciales
-        if credentials[0] == 1:
+        if 'credentials' in credentials:
             credentials_save = {
                 'mentor':mentor.id, #si llega aqui, es xq el user que esta en la req si es un mentor, tambien se podria pasar la instancia del mentor
-                'access_token':credentials[1]['access_token'],
-                'refresh_token':credentials[1]['refresh_token']
+                'access_token':credentials['credentials']['access_token'],
+                'refresh_token':credentials['credentials']['refresh_token']
 
             }
             
@@ -120,17 +123,20 @@ class ZoomCredentialsView(APIView):
             
             #verficamos si obtuvimos unas credenciales validas segun se ha definido en el serializador
             if serializer.is_valid():
+                print("Credenciales son validas")
                 #se guradan las credenciales
                 serializer.save()
                 
+                zoom_service = ZoomService(mentor)
+                print(f"Supeustas credenciales obtenidas {zoom_service.credentials} \n")
                 #obtenemos informacion acerca del correo del cliente, pasandole el endpoint y el mentor que pertenecera al usuario que haga la solicitud al que pertenece la solicitud
-                zoom_user_account_info = service.zoom_api_get_requests("https://api.zoom.us/v2/users/me",mentor)
+                zoom_user_account_info = asyncio.run(zoom_service.get_response_zoom_req("https://api.zoom.us/v2/users/me"))
                 
                 #verficamos a ver si obtuvimos la informacion correcta ya que devolvera una lista con un numero 3 y los datos si no hubo errores en la misma
-                if zoom_user_account_info[0] == 3:
-                    print(zoom_user_account_info)
+                if 'response'  in zoom_user_account_info:
+                    
                     #verficamos si los emails coninciden para dejar las credenciales asociadas a ese usuario
-                    if not zoom_user_account_info[1]['email'] == mentor_zoom_email.email:
+                    if not zoom_user_account_info['response']['email'] == mentor_zoom_email.email:
                         print("Entra aqui ya que no son iguales")
                         #intentamos borrar las credenciales relacionadas al usuario ya que no coinciden, el correo de la app con el de la cuenta de zoom
                         zoom_account_to_delete = Zoom.delete_instance_by_mentor(mentor)
@@ -142,7 +148,7 @@ class ZoomCredentialsView(APIView):
                         
                         
                     #enviamos la informacion de la cuenta, ya que si coinciden (las credenciales ya han sido guardadas)
-                    return Response({"zoom_account_details":zoom_user_account_info[1]},status=status.HTTP_201_CREATED)
+                    return Response({"zoom_account_details":zoom_user_account_info['response']},status=status.HTTP_201_CREATED)
                 
                 #caso contrario devolvemos el error
                 else:
@@ -152,7 +158,7 @@ class ZoomCredentialsView(APIView):
             #devolvemos el error que haya ocurrido con el serializador
             return Response({"error":serializer.errors},status=status.HTTP_400_BAD_REQUEST)
         
-        return Response({"error":credentials[1]},status=status.HTTP_403_FORBIDDEN)
+        return Response({"error":credentials},status=status.HTTP_403_FORBIDDEN)
     
     
     def delete(self,request,format=None):

@@ -21,7 +21,6 @@ videos = (("https://www.youtube.com/watch?v=YQbgdIvC4Io","D:/Zoom Grabaciones/vi
    la grabacion de un principio hasta que se suba a drive, esto es xq puede que suba pero no se haya descargado c-
    oorectamete debido a que un token se haya invalidado etc.
 """
-service = ZoomService()
 
 #tener en cuenta que el que consuma esta vista es xq quiere hacer la automatizacion completa por lo que debe de tener zoom,calendly,notion y drive autorizados
 class ZoomRecordDownloadView(APIView):
@@ -44,11 +43,15 @@ class ZoomRecordDownloadView(APIView):
       if mentor is None:
           return Response({"message":"You must be a mentor to have this functionality"},status=status.HTTP_409_CONFLICT)
       
+
+
       apps_needed = []
       #Registro de valores retornados por cada app, del mentor recibido, asi sabremos si en una de estas apps el mentor no esta registrado
       
       #credenciales de zoom obtenidas por un mentor
       mentor_credentials = Zoom.get_zoom_credentials_by_mentor(mentor)
+      service = ZoomService(mentor_credentials)
+
       apps_needed.append(["zoom",mentor_credentials])
       calendly_credentials = Calendly.get_calendly_token_by_mentor(mentor)
       apps_needed.append(["calendly",calendly_credentials])
