@@ -79,7 +79,7 @@ CHANNEL_LAYERS = {
 
 #Configuracion del token de JWT
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=6000000),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
     #Esto me permite devolver un refresh token en la solicitud ademas de un token normal
     "ROTATE_REFRESH_TOKENS": True,

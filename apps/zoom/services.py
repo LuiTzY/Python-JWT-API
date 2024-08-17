@@ -244,7 +244,7 @@ class ZoomService():
     def download_zoom_recordings(self,start_date,end_date,mentor,calendly_token):
         
         #asignamos a los clientes la instancia de la clase de calendly junto con el token recibido, debido a esto sabra siempre a quien pertenecera la informacion
-        self.clients = CalendlyService(calendly_token)
+        self.calendly = CalendlyService(calendly_token)
          # Convertimos las fechas a cadenas en el formato correcto
         start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
         end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
@@ -274,16 +274,14 @@ class ZoomService():
             errores el flujo del programa se debe de detener y no seguir
             
         """
-        
-        clients = self.get_zoom_req("https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(start_date,end_date))
-        
+        #Pasamos los clientes en un contexto asyncronico para poder trabajarlos de manera correcta y que no nos devuelva una corutina si no el objeto directamente
+        clients = asyncio.run(self.get_zoom_req("https://api.zoom.us/v2/users/me/recordings?from={}&to={}".format(start_date,end_date)))
+        print(f"CORUTIMA CLIENTES {clients} \n")        
         #se convierten los datos en formato json de la respuesta de la api de zoom, para poder acceder a ellos y manejarlos           
         
-        if not 'response' in clients:
-            return f"Ocurrio un error : {clients}"
         
         
-        print("Se obtuvieron esta cantidad de grabaciones de la fecha: {} grabaciones encontradas: {}\n".format(start_date.strftime("%Y-%m-%d"),clients[1]['total_records']))
+        #print("Se obtuvieron esta cantidad de grabaciones de la fecha: {} grabaciones encontradas: {}\n".format(start_date.strftime("%Y-%m-%d"),clients[1]['total_records']))
         
         
         #Se consulta el status del disco duro, para ver si esta conectado en la computadora o no, para verificar si las grabaciones pueden ser guardadas
@@ -291,38 +289,35 @@ class ZoomService():
         
         #Verificamos la disponibilidad del disco duro
         if not storage_status:
-            
             return {"disk_status":"No disponible"}
         
         #El disco duro esta disponible para almacenar las carpetas
         print("El disco duro se encuentra para descargar las grabaciones \n")   
             
         
-        if clients['response'] == 3: #Si obtenemos un 3 de la respuesta, es que se proceso correctamente la solicitud
-            print("Se obtuvieron las grabaciones desde la api de zoom correctamente \n")
             
             #accedemos a la respuesta al total de grabaciones, para determinar que funcion sera utilizada para descargar las grabaciones
+        print("Se obtuvieron las grabaciones desde la api de zoom correctamente \n")
+        #Si solo hay una reunion, se utilizara el metodo para obtener la informacion de esa sola reunion 
+        if clients['response']['total_records'] == 1:
             
-            #Si solo hay una reunion, se utilizara el metodo para descargarla 
-            if clients['response']['total_records'] == 1:
-                print(f"Obtuvimos una sola grabacion dentro del rango de fechas establecido {start_date} {end_date}\n")
-                #devuelve la un diccionario de la grabacion
-                record = self.get_one_recording_full_info(clients['response'][1]) 
-                recordings_info.append(record)
-                
-            elif clients['response'][1]['total_records'] > 1:
-                print(f"Obtuvimos varias grabaciones dentro del rango de fechas establecido {start_date} {end_date}\n")
-                #Si hay mas de una reunion entrara aqui y devolvera una lista de diccionarios de la grabaciones
-                recordings = self.get_multiple_recordings_full_info(clients['response'][1])
-                recordings_info.append(recordings)
+            print(f"Obtuvimos una sola grabacion dentro del rango de fechas establecido {start_date} {end_date}\n")
+            #devuelve la un diccionario de la grabacion
+            record = self.get_one_recording_full_info(clients['response']) 
+            recordings_info.append(record)
+            
+        elif clients['response'][1]['total_records'] > 1:
+            print(f"Obtuvimos varias grabaciones dentro del rango de fechas establecido {start_date} {end_date}\n")
+            #Si hay mas de una reunion entrara aqui y devolvera una lista de diccionarios de la grabaciones con la informaciones
+            recordings = self.get_multiple_recordings_full_info(clients['response'])
+            recordings_info.append(recordings)
 
-            else:
-                print("No se encontraron grabaciones")
-            return {"records_found":len(recordings_info),"records_info":recordings_info }
-            
         else:
-            #caso contrario de que no obtengamos un 3, es posible que haya sido un error, por lo que mostraremos simplemente el error que obtuvimos retornandolo
-            return recordings_info
+            print("No se encontraron grabaciones")
+        return {"records_found":len(recordings_info),"records_info":recordings_info }
+            
+
+            
                         
             
     
@@ -361,7 +356,7 @@ class ZoomService():
         
         print("Obtuvimos varias grabaciones \n")
         print(f" Clientes   {self.clients}\n")
-
+        
         if self.clients[0] == 1:
                 recordings = []
                 records = []
@@ -396,10 +391,7 @@ class ZoomService():
                     client_instance = Client.get_client(cliente['email'])
                     #si no obtenemos una instancia, es decir none, creamos el cliente
                     if client_instance == None:
-                        Client.objects.create(name=cliente['nombre'],email=cliente['email'],mentor=self.credentials.mentor)
-                    
-                    
-                    
+                        client_instance= Client.objects.create(name=cliente['nombre'],email=cliente['email'],mentor=self.credentials.mentor)
                     
                     print("Nombre de la clienta: {} Correo de la clienta: {}".format(cliente['nombre'],cliente['email']))
                     
@@ -420,6 +412,7 @@ class ZoomService():
                             "client_info":cliente,
                             #informacion de la reunion de la grabacion
                             "client_meeting_details":{
+                                
                                 "id":meeting['id'],
                                 "title":meeting['topic'],
                                 "date":meeting['start_time'],
@@ -461,7 +454,7 @@ class ZoomService():
                     #si lo es, lo agrego
                     
                     
-                    client, client_created = Client.get_or_create_client(name=clients[i]['nombre'],email=clients[i]['email'],mentor=self.credentials.mentor) 
+                    client, client_created = Client.objects.get_or_create(name=clients[i]['nombre'],email=clients[i]['email'],mentor=self.credentials.mentor) 
                     #se creara un folder con el nombre del cliente
                     folder_clienta_name = os.path.join(self.storage_url,f"{clients[i]['nombre']}")
 

@@ -1,11 +1,11 @@
-from .models import Drive
+from .models import *
 from apps.clients.models import Mentor
 import uuid
 import httpx
 import os
 from dotenv import load_dotenv
-
 import asyncio
+from asgiref.sync import sync_to_async
 load_dotenv()
 
 state = str(uuid.uuid4())
@@ -141,7 +141,8 @@ class DriveService():
         self.endpoint = endpoint
         self.mentor = mentor
         #base_transport sera una instancide de una capa de transporte asyncrona para manejar solicitudes 
-                   
+        print(f"CREDENCIALES  OBJETO {self.credentials} \n")
+        
     def get_headers(self):
         
         if self.credentials == None:
@@ -219,9 +220,9 @@ class DriveService():
             except httpx.HTTPError as e:
                 return {"error": f"{e}"}
     
-    async def create_client_drive_folder(self):
+    async def create_client_drive_folder(self,client_info):
         file_metadata = {
-        "name": f"{}",# aqui va el nombre del cliente perced
+        "name": f"{client_info['name']} ", # aqui va el nombre del cliente perced
         "mimeType": "application/vnd.google-apps.folder",
         'parents':''#id del folder donde ira todos los clientes
         }
@@ -229,8 +230,20 @@ class DriveService():
         #en el response de la solicitud se encontrara el id de la carpeta creada
         #luego creamos el registro de la clienta en la base de datos, guardando el id de su folder para su posterior uso
         async with httpx.AsyncClient(transport=TokenAuthTransport(self)) as client:
-            response = client.post(url="https://www.googleapis.com/drive/v3/files",headers=self.headers, data=file_metadata)
+            response = client.post(url=self.endpoint,headers=self.headers, data=file_metadata)
             response.raise_for_status()
+            #Se devuelve el id del folder creado para luego con este ser guardado
+            try:
+                ClientDrive.objects.aget_or_create(
+                mentor = self.mentor,
+                client = client_info['client_info']['client_db_id'],
+                folder_id = response['id'],
+                folder_name = client_info['name'] 
+            )
+            except Exception as e:
+                print(f"Ocurrio este error al intentar crear el cliente {e} \n")
+                return
+            
             return {"created":{response['id']}}
         
     async def post_drive_req(self, endpoint):
@@ -248,7 +261,7 @@ class DriveService():
             'parents':''#aqui va el id del folder de la clienta que se haya creado
         }
         headers = {
-        'Authorization': f'Bearer {"access-token"}',
+        'Authorization': f'Bearer {self.credentials.access_token}',
         'Content-Type': 'application/json; charset=UTF-8',
         'X-Upload-Content-Type': 'video/mp4',  # Tipo MIME del contenido del archivo
         'X-Upload-Content-Length': 'TAMANO_DEL_ARCHIVO_EN_BYTES'  # Tamaño del archivo que se va a subir
@@ -261,6 +274,10 @@ class DriveService():
             except httpx.HTTPError as e:
                 return {"error": f"{e}"}
            
+    async def handle_create_folder(self,client_info):
+        print("LLAMAMOS LA FUNCION PARA CREAR EL FOLDER \n")
+        result =  await self.create_client_drive_folder(client_info)
+        return result
     async def handle_async_post_req(self,endpoint):
         
         print("Se ejecutara esta funcion \n")

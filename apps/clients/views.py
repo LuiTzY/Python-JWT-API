@@ -19,8 +19,10 @@ class MentorView(APIView):
         pass
     
     def post(self,request,format=None):
-        request.data['user'] = request.user.id
-        mentor= MentorSerializer(data=request.data)
+        data = request.data.copy()
+        print("Peticion a post")
+        data['user'] = request.user.id
+        mentor= MentorSerializer(data=data)
         if mentor.is_valid():
             mentor.save()
             return Response({"message":"You registered as a mentor perfectly"},status=status.HTTP_200_OK)

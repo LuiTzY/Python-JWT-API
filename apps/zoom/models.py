@@ -13,10 +13,9 @@ class Zoom(models.Model):
         if not mentor:
             return None
         try:
-                return cls.objects.get(mentor=mentor)
+            return cls.objects.get(mentor=mentor)
         except cls.DoesNotExist:
             return None
-    
     #Metodo para eliminar una instancia que nos pasen de un mentor
     @classmethod
     def delete_instance_by_mentor(cls, mentor):
@@ -41,7 +40,14 @@ class UserZoomEmail(models.Model):
         except cls.DoesNotExist:
             return None
     
-        
+    @classmethod
+    def get_zoom_by_email(cls,email):
+        if not email:
+            return None
+        try:
+            return cls.objects.get(email=email)
+        except cls.DoesNotExist:
+            return None        
 
 
 

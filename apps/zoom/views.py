@@ -79,7 +79,6 @@ class ZoomCredentialsView(APIView):
     def post(self,request,format=None):
         
         auth_code = request.query_params.get('auth_code', None)
-        
         mentor = Mentor.get_mentor(request.user)
         
         if mentor == None:
@@ -187,24 +186,27 @@ class ZoomRecordingsViews(APIView):
         #En los parametros esperamos recibir fechas para buscar las grabaciones que coincidan 
         start_date,end_date = request.query_params.get('start_date',None),request.query_params.get('end_date',None)
         
-        print(start_date)
+        mentor = Mentor.get_mentor(request.user)
+        
+        if mentor == None:
+            #Si no existe es xq si hay un correo relacionado a una cuenta, pero el usuario no ha auntenticado la app de zoom
+            return Response({"error":"You must be a mentor to have this funcionality"},status=status.HTTP_403_FORBIDDEN)
+        
+        service = ZoomService(mentor)
+
         
         if  start_date == None  or  end_date == None:
             return Response({"error":"You Must Provided a start_date o end_date"}, status=status.HTTP_400_BAD_REQUEST)
         
-        recordings = service.zoom_api_get_requests(f"https://api.zoom.us/v2/users/me/recordings?from={start_date}&to={end_date}",request.user)
+        #Pasamos la respuesta y lo colocamos en una corutina para obtener el resultado, directamente al usar un http transport el token se actualizara si es necesario
+        recordings = asyncio.run(service.get_response_zoom_req(f"https://api.zoom.us/v2/users/me/recordings?from={start_date}&to={end_date}"))
         
-        if recordings[0] == 3:
-            #retornamos las grabaciones obtenidas
-            return Response({"recordings":recordings[1]},status=status.HTTP_202_ACCEPTED)
-        elif recordings[0] == 4:
-            recordings = service.zoom_api_get_requests(f"https://api.zoom.us/v2/users/me/recordings?from={start_date}&to={end_date}",request.user)
+        #Retornamos las grabaciones
+        return Response({"recordings":recordings},status=status.HTTP_202_ACCEPTED)
         
         #Si por casualidad al hacer la solicitud de obtener las grabaciones las credenciales son invalidas y se renuevan
         #hariamos otra vez la solicitud
-        else:
-            return Response({"error":"Ocurrio un error en el servidor al intentar realizar acciones la solicitud"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
 
 #Vista para manejar las acciones relacionadas con un email relacionado a una cuenta de zoom
 class ZoomEmailUserAccount(APIView):
@@ -250,8 +252,9 @@ class ZoomEmailUserAccount(APIView):
         if mentor == None:
             return Response({"error":"You must be a mentor to associated an email zoom account"},status=status.HTTP_400_BAD_REQUEST)
         
+        email = request.data.get('email', None)
         #Verificamos si obtuvimos el email en los datos post de la solicitud
-        if not request.data['email']:
+        if not email:
             return Response({"message":"You have to give an user zoom email to update"},status=status.HTTP_403_FORBIDDEN)
         
         zoom_account_email = UserZoomEmail.get_user_zoom_email(mentor)
@@ -264,7 +267,14 @@ class ZoomEmailUserAccount(APIView):
         #no se guarda en una variable ya que no es necesario obtener el estado de esa operacion
         Zoom.delete_instance_by_mentor(mentor)
         
-        zoom_account_email.email = request.data['email']
+        zoom_account_email.email = email
+        
+        #Verficamos si ya existe un mentor con ese correo
+        verify_zoom_account = UserZoomEmail.get_zoom_by_email(email)
+        
+        if not verify_zoom_account is None:
+            return Response({"Message":"Sorry but we already have an mentor registered with this email"}, status=status.HTTP_400_BAD_REQUEST)
+        
         zoom_account_email.save()
         return Response({"message":"your zoom account email was succesfully updated"},status=status.HTTP_202_ACCEPTED)
 

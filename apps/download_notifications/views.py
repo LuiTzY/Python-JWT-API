@@ -49,8 +49,9 @@ class ZoomRecordDownloadView(APIView):
       #Registro de valores retornados por cada app, del mentor recibido, asi sabremos si en una de estas apps el mentor no esta registrado
       
       #credenciales de zoom obtenidas por un mentor
+      
       mentor_credentials = Zoom.get_zoom_credentials_by_mentor(mentor)
-      service = ZoomService(mentor_credentials)
+      service = ZoomService(mentor)
 
       apps_needed.append(["zoom",mentor_credentials])
       calendly_credentials = Calendly.get_calendly_token_by_mentor(mentor)
@@ -71,15 +72,13 @@ class ZoomRecordDownloadView(APIView):
       
       #devolvemos las grabaciones encontradas con la cuenta del mentor
       records = service.download_zoom_recordings(start_date,end_date,mentor,calendly_credentials)
-      print(records)
       if 'records_found' in records:
           if records['records_found'] == 0:
             return Response({"message":"No records matches with this date"},status=status.HTTP_404_NOT_FOUND)
         
-          print("No llega \n")
-          #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcionce de start_downloads_async y se le pasan los argumentos de la funcion
-          thread = Thread(target=start_downloads_sync, args=(records['records_info'],mentor_credentials.access_token))
-          #Iniciamos el hilo
+          #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcion de start_downloads_sync y se le pasan los argumentos de la funcion
+          thread = Thread(target=start_downloads_sync, args=(records['records_info'],mentor_credentials))
+          #se inicia el hilo para no bloquear la ejecucion principal y poder retornar las grabaciones directamente mientras esas estan siendo enviadas por un websocket
           thread.start()
           
       print(f"Grabaciones encontradas \n")
@@ -106,7 +105,7 @@ class ZoomRecordDownloadView(APIView):
             thread.start()
             #Evniamos un mensaje de que la solicitud se proceso con exito
             return Response({"message": "Download Started"}, status=status.HTTP_200_OK)
-        #en el caso de que el token haya expirado, haremos la solicitud nuevamente para obtener las grabaciones
+        #en el caso de que el token haya expirado, haremos la solicitud nuevamente para obtener las grabaciones (puede no ser necesario al implementar el transport)
         elif recordings[0] == 4:
             recordings = service.zoom_api_get_requests(f"https://api.zoom.us/v2/users/me/recordings?from={start_date}&to={end_date}",request.user)
             #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcionce de start_downloads_async y se le pasan los argumentos de la funcion

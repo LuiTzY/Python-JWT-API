@@ -18,8 +18,14 @@ class Drive(models.Model):
             return cls.objects.get(mentor=mentor)
         except cls.DoesNotExist:
             return None
-    
-       
+    @classmethod
+    def get_drive_credentials_by_mentor_async(cls,mentor):
+        if not mentor:
+            return None
+        try:
+            return cls.objects.aget(mentor)
+        except cls.DoesNotExist:
+            return None
 
 class UserDriveEmail(models.Model):
     #Instancia del usuario
@@ -38,8 +44,8 @@ class UserDriveEmail(models.Model):
             return None
         
         
-class client_drive(models.Model):
+class ClientDrive(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
-    folder_id = models.CharField(max_length=120)
-    folder_name = models.CharField(max_length=120)
+    folder_id = models.CharField(max_length=120, unique=True)
+    folder_name = models.CharField(max_length=120, unique=True)
