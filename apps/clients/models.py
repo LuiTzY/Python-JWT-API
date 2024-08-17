@@ -27,7 +27,7 @@ class Mentor(models.Model):
             print("No existe")
             #retornamos none
             return None
-
+    
 class Client(models.Model):
     name = models.CharField(max_length=120,null=False)
     email = models.EmailField(unique=True,null=False)
@@ -49,7 +49,6 @@ class Client(models.Model):
         except cls.DoesNotExist:
             return None
 async def get_mi_model(user):
-    
     mentor = await database_sync_to_async( Mentor.objects.get)(user)
     return mentor
 
