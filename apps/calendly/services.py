@@ -24,8 +24,9 @@ class CalendlyService():
         'Authorization':'Bearer {}'.format(self.token.calendly_token) #Lo que recibiremos es un objeto de tipo calendly por lo que accederemos a su atributo del token
         }
         #aqui se va a guardar una lista de los eventos que sean presenciales
-        self.presencial_events_uri = [os.getenv("Calendly_presencial_event_uri")]
         
+        self.presencial_events_uri = [os.getenv("Calendly_presencial_event_uri")]
+        print(f"{self.presencial_events_uri} URL PRESENCIALES")
     async def test_token(self):
         try:
             personal_info = await requests.get("https://api.calendly.com/users/me",headers=self.headers)
@@ -58,10 +59,14 @@ class CalendlyService():
         
     #Se guardaran en una lista por comprension solo los eventos que no hayan sido cancelados
     def filter_actived_events(self,events):
+        print(f"EVENTOS REGISTRADOS {events}")
         #Obtendremos una lista de collection donde cada indice representa un evento programado
         #por lo que iteramos sobre ella obteniendo asi el event y verificando si dentro de este objeto
         #se encuentra el diccionario de cancellation
-        return [(event) for event in events['collection'] if not event.get('cancellation') and event.get("uri") == self.presencial_events_uri ]
+        import json
+        with open("json.json","w") as file:
+            json.dump(events,file, indent=4)
+        return [(event) for event in events['collection'] if not event.get('cancellation') and event.get("uri") not in self.presencial_events_uri ]
     
     def get_sheduled_events(self,start_date,end_date):
         
@@ -79,13 +84,15 @@ class CalendlyService():
             print(f"URL DE CALENDLY PARA LA SOLICITUD {scheduled_events.url}")
             #convertimos la respuesta en un formato json, para poder acceder a el
             response = scheduled_events.json()
-            print(response)
+
             #al hacer la solicitud, obtendremos 2 objetos, una collection y un paginatio
             #collection es el que contiene el resultado de los eventos, mientras que pagination no es necesario ya que solo brina informacion de tokens de pagina y conteos de resultados
             response.pop("pagination")
             
             #Devolvera una lista de los eventos que no esten cancelados
             actived_events = self.filter_actived_events(response)
+            print(f"EVENTOS ACTIVOS {actived_events}")
+            
             
             #Solo se devolveran los eventos que no esten cancelados y solo sean presenciales
             return [1, actived_events]
@@ -101,7 +108,6 @@ class CalendlyService():
     
     #El metodo espera obtener una lista de diccionarios de los eventos
     def get_scheduled_events_invite_email(self,start_date,end_date):
-        
         #lista donde se guardaran un diccionario de cada cliente, de los eventos obtenidos
         clients_from_events = []
         """
@@ -112,9 +118,10 @@ class CalendlyService():
         #obtenemos los eventos
         actived_events = self.get_sheduled_events(start_date,end_date)
         
+        
         if actived_events[0] == 1:
             #Esto significa que si se proceso la solicitud y tenemos una respuesta
-            
+            print("Se proceso la solicitud \n")
             #Al ser una lista donde cada indice es un objeto de un evento, la iteramos para obtener los invitados de ese evento (cliente)
             for event in actived_events[1]:
                 """
@@ -163,6 +170,7 @@ class CalendlyService():
                         'email':invite['collection'][0]['email'],
                         'reunion_id':event['location']['data']['id']
                     })
+                    print(f"Clientes obtenidos de calendly {clients_from_events}")
                     return [1,clients_from_events]
                      
         else:
