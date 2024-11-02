@@ -58,9 +58,9 @@ async def download_video(data,channel_name,mentor_credentials):
                         progress = (downloaded / total_size ) * 100 # dividir total_sixe con downloaded para obtener el progreso total correctamente multiplicado x 100
                         #enviamos el progreso de descarga al frontend
                         #Esta es la informacion que enviamos al cliente, enviaremos el progreso de descarga de cada video
+                        drive_service = DriveService(mentor_credentials.mentor,"https://www.googleapis.com/drive/v3/files")
                         
-                        
-                        
+                        asyncio.run(drive_service.handle_create_folder(data))
                         await send_progress({
                             'client_name': data['client_info']['nombre'],
                             'client_email':data['client_info']['email'],
@@ -101,5 +101,4 @@ async def send_progress(message):
 
 #va a iniciar una lista siendo cada indice una tarea para descargar cada grabacion de manera sincronica, nada sera interrumpido
 def start_downloads_sync(clients,mentor_credentials):
-    
     asyncio.run(start_downloads(clients,mentor_credentials))

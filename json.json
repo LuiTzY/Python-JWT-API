@@ -1,0 +1,774 @@
+{
+    "collection": [
+        {
+            "calendar_event": {
+                "external_id": "qoogo4ckaam2mg7epq2c4ja1qo",
+                "kind": "google"
+            },
+            "created_at": "2023-08-24T15:07:55.029475Z",
+            "end_time": "2023-08-31T17:00:00.000000Z",
+            "event_guests": [],
+            "event_memberships": [
+                {
+                    "buffered_end_time": "2023-08-31T17:00:00.000000Z",
+                    "buffered_start_time": "2023-08-31T15:00:00.000000Z",
+                    "user": "https://api.calendly.com/users/DGFGNV3BZMXVXALA",
+                    "user_email": "hola@keniavasquezg.com",
+                    "user_name": "Kenia Vasquez"
+                }
+            ],
+            "event_type": "https://api.calendly.com/event_types/CFARTQVDJ6AMER6U",
+            "invitees_counter": {
+                "active": 1,
+                "limit": 1,
+                "total": 1
+            },
+            "location": {
+                "data": {
+                    "id": 81326481488,
+                    "settings": {
+                        "global_dial_in_numbers": [
+                            {
+                                "country_name": "US",
+                                "number": "+1 646 931 3860",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "New York",
+                                "number": "+1 929 205 6099",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Washington DC",
+                                "number": "+1 301 715 8592",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 305 224 1968",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 309 205 3325",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Chicago",
+                                "number": "+1 312 626 6799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Tacoma",
+                                "number": "+1 253 215 8782",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Houston",
+                                "number": "+1 346 248 7799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 360 209 5623",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 386 347 5053",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 507 473 4847",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 564 217 2000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 669 444 9171",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "San Jose",
+                                "number": "+1 669 900 6833",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 689 278 1000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 719 359 4580",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 253 205 0468",
+                                "type": "toll",
+                                "country": "US"
+                            }
+                        ]
+                    },
+                    "extra": {
+                        "intl_numbers_url": "https://us02web.zoom.us/u/kceJ6bhZrR"
+                    }
+                },
+                "join_url": "https://us02web.zoom.us/j/81326481488",
+                "status": "pushed",
+                "type": "zoom"
+            },
+            "meeting_notes_html": null,
+            "meeting_notes_plain": null,
+            "name": "Mentor\u00eda 1.1. con Kenia V\u00e1squez G.",
+            "start_time": "2023-08-31T15:00:00.000000Z",
+            "status": "active",
+            "updated_at": "2023-08-24T15:07:56.675320Z",
+            "uri": "https://api.calendly.com/scheduled_events/7e73d315-88df-4ab3-80dc-bc0958597393"
+        },
+        {
+            "calendar_event": {
+                "external_id": "9ndldeqg9m281nldacnpiq9l3s",
+                "kind": "google"
+            },
+            "created_at": "2023-08-24T15:51:27.432465Z",
+            "end_time": "2023-09-05T01:00:00.000000Z",
+            "event_guests": [],
+            "event_memberships": [
+                {
+                    "buffered_end_time": "2023-09-05T01:00:00.000000Z",
+                    "buffered_start_time": "2023-09-04T23:00:00.000000Z",
+                    "user": "https://api.calendly.com/users/DGFGNV3BZMXVXALA",
+                    "user_email": "hola@keniavasquezg.com",
+                    "user_name": "Kenia Vasquez"
+                }
+            ],
+            "event_type": "https://api.calendly.com/event_types/CFARTQVDJ6AMER6U",
+            "invitees_counter": {
+                "active": 1,
+                "limit": 1,
+                "total": 1
+            },
+            "location": {
+                "data": {
+                    "id": 89181555047,
+                    "settings": {
+                        "global_dial_in_numbers": [
+                            {
+                                "country_name": "US",
+                                "number": "+1 305 224 1968",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 309 205 3325",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Chicago",
+                                "number": "+1 312 626 6799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 646 931 3860",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "New York",
+                                "number": "+1 929 205 6099",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Washington DC",
+                                "number": "+1 301 715 8592",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 689 278 1000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 719 359 4580",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 253 205 0468",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Tacoma",
+                                "number": "+1 253 215 8782",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Houston",
+                                "number": "+1 346 248 7799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 360 209 5623",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 386 347 5053",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 507 473 4847",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 564 217 2000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 669 444 9171",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "San Jose",
+                                "number": "+1 669 900 6833",
+                                "type": "toll",
+                                "country": "US"
+                            }
+                        ]
+                    },
+                    "extra": {
+                        "intl_numbers_url": "https://us02web.zoom.us/u/kdhREZ65i9"
+                    }
+                },
+                "join_url": "https://us02web.zoom.us/j/89181555047",
+                "status": "pushed",
+                "type": "zoom"
+            },
+            "meeting_notes_html": null,
+            "meeting_notes_plain": null,
+            "name": "Mentor\u00eda 1.1. con Kenia V\u00e1squez G.",
+            "start_time": "2023-09-04T23:00:00.000000Z",
+            "status": "active",
+            "updated_at": "2023-08-24T15:51:28.884553Z",
+            "uri": "https://api.calendly.com/scheduled_events/48a3a9d1-4a62-489d-b857-673a7581f001"
+        },
+        {
+            "calendar_event": {
+                "external_id": "pri2qtes212cl2frkp8gmtiods",
+                "kind": "google"
+            },
+            "created_at": "2023-08-24T16:07:40.045913Z",
+            "end_time": "2023-09-06T00:00:00.000000Z",
+            "event_guests": [],
+            "event_memberships": [
+                {
+                    "buffered_end_time": "2023-09-06T00:00:00.000000Z",
+                    "buffered_start_time": "2023-09-05T22:00:00.000000Z",
+                    "user": "https://api.calendly.com/users/DGFGNV3BZMXVXALA",
+                    "user_email": "hola@keniavasquezg.com",
+                    "user_name": "Kenia Vasquez"
+                }
+            ],
+            "event_type": "https://api.calendly.com/event_types/CFARTQVDJ6AMER6U",
+            "invitees_counter": {
+                "active": 1,
+                "limit": 1,
+                "total": 1
+            },
+            "location": {
+                "data": {
+                    "id": 85218487562,
+                    "settings": {
+                        "global_dial_in_numbers": [
+                            {
+                                "country_name": "US",
+                                "number": "+1 646 931 3860",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "New York",
+                                "number": "+1 929 205 6099",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Washington DC",
+                                "number": "+1 301 715 8592",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 305 224 1968",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 309 205 3325",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Chicago",
+                                "number": "+1 312 626 6799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Tacoma",
+                                "number": "+1 253 215 8782",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Houston",
+                                "number": "+1 346 248 7799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 360 209 5623",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 386 347 5053",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 507 473 4847",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 564 217 2000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 669 444 9171",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "San Jose",
+                                "number": "+1 669 900 6833",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 689 278 1000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 719 359 4580",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 253 205 0468",
+                                "type": "toll",
+                                "country": "US"
+                            }
+                        ]
+                    },
+                    "extra": {
+                        "intl_numbers_url": "https://us02web.zoom.us/u/knCMm9bKI"
+                    }
+                },
+                "join_url": "https://us02web.zoom.us/j/85218487562",
+                "status": "pushed",
+                "type": "zoom"
+            },
+            "meeting_notes_html": null,
+            "meeting_notes_plain": null,
+            "name": "Mentor\u00eda 1.1. con Kenia V\u00e1squez G.",
+            "start_time": "2023-09-05T22:00:00.000000Z",
+            "status": "active",
+            "updated_at": "2023-08-24T16:07:41.726311Z",
+            "uri": "https://api.calendly.com/scheduled_events/bbfcdfbe-c2c9-465f-ad14-0488930abe19"
+        },
+        {
+            "calendar_event": {
+                "external_id": "d760k4rag9tet515hksckrlo58",
+                "kind": "google"
+            },
+            "created_at": "2023-08-24T16:09:34.897118Z",
+            "end_time": "2023-09-04T16:00:00.000000Z",
+            "event_guests": [],
+            "event_memberships": [
+                {
+                    "buffered_end_time": "2023-09-04T16:00:00.000000Z",
+                    "buffered_start_time": "2023-09-04T14:00:00.000000Z",
+                    "user": "https://api.calendly.com/users/DGFGNV3BZMXVXALA",
+                    "user_email": "hola@keniavasquezg.com",
+                    "user_name": "Kenia Vasquez"
+                }
+            ],
+            "event_type": "https://api.calendly.com/event_types/CFARTQVDJ6AMER6U",
+            "invitees_counter": {
+                "active": 1,
+                "limit": 1,
+                "total": 1
+            },
+            "location": {
+                "data": {
+                    "id": 84284664515,
+                    "settings": {
+                        "global_dial_in_numbers": [
+                            {
+                                "country_name": "US",
+                                "number": "+1 305 224 1968",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 309 205 3325",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Chicago",
+                                "number": "+1 312 626 6799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 646 931 3860",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "New York",
+                                "number": "+1 929 205 6099",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Washington DC",
+                                "number": "+1 301 715 8592",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 386 347 5053",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 507 473 4847",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 564 217 2000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 669 444 9171",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "San Jose",
+                                "number": "+1 669 900 6833",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 689 278 1000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 719 359 4580",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 253 205 0468",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Tacoma",
+                                "number": "+1 253 215 8782",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Houston",
+                                "number": "+1 346 248 7799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 360 209 5623",
+                                "type": "toll",
+                                "country": "US"
+                            }
+                        ]
+                    },
+                    "extra": {
+                        "intl_numbers_url": "https://us02web.zoom.us/u/kbAFYzETqE"
+                    }
+                },
+                "join_url": "https://us02web.zoom.us/j/84284664515",
+                "status": "pushed",
+                "type": "zoom"
+            },
+            "meeting_notes_html": null,
+            "meeting_notes_plain": null,
+            "name": "Mentor\u00eda 1.1. con Kenia V\u00e1squez G.",
+            "start_time": "2023-09-04T14:00:00.000000Z",
+            "status": "active",
+            "updated_at": "2023-08-24T16:09:36.773314Z",
+            "uri": "https://api.calendly.com/scheduled_events/2c1685d3-2a7a-451c-b870-c849594e8d5a"
+        },
+        {
+            "calendar_event": {
+                "external_id": "v1jnesqa74pjiltsf3tocaio4k",
+                "kind": "google"
+            },
+            "created_at": "2023-08-30T21:44:35.448278Z",
+            "end_time": "2023-08-31T20:00:00.000000Z",
+            "event_guests": [],
+            "event_memberships": [
+                {
+                    "buffered_end_time": "2023-08-31T20:00:00.000000Z",
+                    "buffered_start_time": "2023-08-31T18:00:00.000000Z",
+                    "user": "https://api.calendly.com/users/DGFGNV3BZMXVXALA",
+                    "user_email": "hola@keniavasquezg.com",
+                    "user_name": "Kenia Vasquez"
+                }
+            ],
+            "event_type": "https://api.calendly.com/event_types/CFARTQVDJ6AMER6U",
+            "invitees_counter": {
+                "active": 1,
+                "limit": 1,
+                "total": 1
+            },
+            "location": {
+                "data": {
+                    "id": 81017116501,
+                    "settings": {
+                        "global_dial_in_numbers": [
+                            {
+                                "country_name": "US",
+                                "city": "New York",
+                                "number": "+1 929 205 6099",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Washington DC",
+                                "number": "+1 301 715 8592",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 305 224 1968",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 309 205 3325",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Chicago",
+                                "number": "+1 312 626 6799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 646 931 3860",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 689 278 1000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 719 359 4580",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 253 205 0468",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Tacoma",
+                                "number": "+1 253 215 8782",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "Houston",
+                                "number": "+1 346 248 7799",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 360 209 5623",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 386 347 5053",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 507 473 4847",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 564 217 2000",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "number": "+1 669 444 9171",
+                                "type": "toll",
+                                "country": "US"
+                            },
+                            {
+                                "country_name": "US",
+                                "city": "San Jose",
+                                "number": "+1 669 900 6833",
+                                "type": "toll",
+                                "country": "US"
+                            }
+                        ]
+                    },
+                    "extra": {
+                        "intl_numbers_url": "https://us02web.zoom.us/u/keJ15nbKe1"
+                    }
+                },
+                "join_url": "https://us02web.zoom.us/j/81017116501",
+                "status": "pushed",
+                "type": "zoom"
+            },
+            "meeting_notes_html": null,
+            "meeting_notes_plain": null,
+            "name": "Mentor\u00eda 1.1. con Kenia V\u00e1squez G.",
+            "start_time": "2023-08-31T18:00:00.000000Z",
+            "status": "active",
+            "updated_at": "2023-08-30T21:44:37.605802Z",
+            "uri": "https://api.calendly.com/scheduled_events/dde14c8b-41a1-4ed9-80b8-280bb2c27b28"
+        }
+    ]
+}

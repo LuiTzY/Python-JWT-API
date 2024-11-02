@@ -23,7 +23,7 @@ class Drive(models.Model):
         if not mentor:
             return None
         try:
-            return cls.objects.aget(mentor)
+            return cls.objects.aget(mentor=mentor)
         except cls.DoesNotExist:
             return None
 

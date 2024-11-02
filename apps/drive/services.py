@@ -136,7 +136,7 @@ class TokenAuthTransport(httpx.AsyncBaseTransport):
 
 class DriveService():
     def __init__(self,mentor,endpoint):
-        self.credentials = Drive.get_drive_credentials_by_mentor(mentor)
+        self.credentials = ""
         self.headers = ""
         self.endpoint = endpoint
         self.mentor = mentor
@@ -227,6 +227,8 @@ class DriveService():
         'parents':''#id del folder donde ira todos los clientes
         }
 
+        self.credentials =  sync_to_async(Drive.get_drive_credentials_by_mentor_async(self.mentor))
+        print("YA SE OBTUVIERON ESTAS CREDSSSSSSSSSSSSSSSSSSSSSS \n")
         #en el response de la solicitud se encontrara el id de la carpeta creada
         #luego creamos el registro de la clienta en la base de datos, guardando el id de su folder para su posterior uso
         async with httpx.AsyncClient(transport=TokenAuthTransport(self)) as client:
@@ -234,12 +236,12 @@ class DriveService():
             response.raise_for_status()
             #Se devuelve el id del folder creado para luego con este ser guardado
             try:
-                ClientDrive.objects.aget_or_create(
+                sync_to_async( ClientDrive.objects.aget_or_create(
                 mentor = self.mentor,
                 client = client_info['client_info']['client_db_id'],
                 folder_id = response['id'],
                 folder_name = client_info['name'] 
-            )
+            ))
             except Exception as e:
                 print(f"Ocurrio este error al intentar crear el cliente {e} \n")
                 return

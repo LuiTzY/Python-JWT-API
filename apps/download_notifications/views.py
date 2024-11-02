@@ -76,6 +76,7 @@ class ZoomRecordDownloadView(APIView):
           if records['records_found'] == 0:
             return Response({"message":"No records matches with this date"},status=status.HTTP_404_NOT_FOUND)
         
+          
           #Se crea un hilo para trabajar con las grabaciones de manera asincronica, utilizando la funcion de start_downloads_sync y se le pasan los argumentos de la funcion
           thread = Thread(target=start_downloads_sync, args=(records['records_info'],mentor_credentials))
           #se inicia el hilo para no bloquear la ejecucion principal y poder retornar las grabaciones directamente mientras esas estan siendo enviadas por un websocket
